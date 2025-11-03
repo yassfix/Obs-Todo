@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compact Task Dashboard (OBS-ready, realtime)</title>
+    <style>
+        :root {
+            --primary: #6c5ce7;
+            --primary-light: #a29bfe;
+            --secondary: #00b894;
+            --background: #2d3436;
+            --card: #353b48;
+            --text: #dfe6e9;
+            --accent: #fd79a8;
+            --warning: #fdcb6e;
+            --danger: #e17055;
+        }
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif}
+        body{background-color:var(--background);color:var(--text);padding:15px;max-width:900px;margin:0 auto}
+        .dashboard{display:flex;flex-direction:column;gap:20px}
+        .header{text-align:center;margin-bottom:5px}
+        .header h1{color:var(--primary);font-size:1.8rem;margin-bottom:3px}
+        .header p{color:var(--primary-light);font-size:0.95rem}
+        .focus-section{background-color:var(--card);border-radius:10px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.2)}
+        .section-header{display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid var(--primary)}
+        .section-header h2{font-size:1.4rem;margin-left:10px}
+        .icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:bold;background-color:var(--accent)}
+        .task-list{list-style-type:none;margin-bottom:20px}
+        .task-item{display:flex;align-items:center;padding:12px 10px;margin-bottom:8px;background-color:rgba(255,255,255,.05);border-radius:8px;transition:all .3s}
+        .task-item:hover{background-color:rgba(255,255,255,.1)}
+        .task-checkbox{margin-right:12px;width:18px;height:18px;accent-color:var(--secondary);cursor:pointer}
+        .task-text{flex-grow:1;font-size:1rem;margin-right:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .task-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
+        .task-priority{padding:3px 8px;border-radius:12px;font-size:.75rem;font-weight:bold;white-space:nowrap}
+        .priority-high{background-color:var(--danger)}
+        .priority-medium{background-color:var(--warning);color:var(--background)}
+        .priority-low{background-color:var(--primary-light);color:var(--background)}
+        .task-time{font-size:.8rem;color:var(--primary-light);white-space:nowrap}
+        .completed{text-decoration:line-through;opacity:.7}
+        .progress-container{margin-top:15px}
+        .progress-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.9rem}
+        .progress-bar{height:8px;background-color:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
+        .progress-fill{height:100%;background-color:var(--secondary);border-radius:4px;transition:width .5s}
+        .stats{display:flex;justify-content:space-between;margin-top:10px;font-size:.85rem;color:var(--primary-light)}
+        .footer{text-align:center;margin-top:15px;color:var(--primary-light);font-size:.85rem}
+        .new-task{display:flex;margin-top:15px;gap:8px}
+        .new-task-input{flex-grow:1;padding:10px 12px;border:none;border-radius:6px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:.9rem}
+        .new-task-button{padding:10px 15px;border:none;border-radius:6px;background-color:var(--primary);color:white;font-weight:bold;font-size:.9rem;cursor:pointer;white-space:nowrap}
+        .empty-state{text-align:center;padding:20px;color:var(--primary-light);font-size:.9rem}
+        @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-priority,.task-time{font-size:.7rem}}
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <div class="header">
+            <h1>Task Focus Dashboard</h1>
+            <p>What are you working on today?</p>
+        </div>
+        <div class="focus-section">
+            <div class="section-header">
+                <div class="icon">✓</div>
+                <h2>Current Focus</h2>
+            </div>
+            <ul class="task-list" id="task-list"></ul>
+            <div class="new-task">
+                <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
+                <button class="new-task-button" id="add-task-btn">Add</button>
+            </div>
+            <div class="progress-container">
+                <div class="progress-header">
+                    <span>Progress</span>
+                    <span id="progress-percent">0%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+            </div>
+            <div class="stats">
+                <span id="completed-count">0 of 0 completed</span>
+                <span id="remaining-count">0 tasks remaining</span>
+            </div>
+        </div>
+        <div class="footer">
+            <p id="timestamp">Updated: --</p>
+        </div>
+    </div>
+
+    <!-- ====== REALTIME BACKEND: Firebase Realtime Database (recommended) ======
+         Replace the firebaseConfig object below with your project's config.
+         If you don't want to use Firebase, the script will fall back to localStorage.
+    -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script>
+        // ---------- CONFIG: paste your Firebase project's config here ----------
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "...",
+            appId: "..."
+        };
+
+        let useFirebase = false;
+        try {
+            // basic detection: if apiKey still placeholder, we'll skip firebase
+            if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_API_KEY')) {
+                firebase.initializeApp(firebaseConfig);
+                useFirebase = true;
+            }
+        } catch (err) {
+            console.warn('Firebase init failed, falling back to localStorage:', err);
+            useFirebase = false;
+        }
+
+        // ---------- DOM helpers ----------
+        const taskListEl = document.getElementById('task-list');
+        const inputEl = document.getElementById('new-task-input');
+        const addBtn = document.getElementById('add-task-btn');
+        const progressFill = document.getElementById('progress-fill');
+        const progressPercent = document.getElementById('progress-percent');
+        const completedCount = document.getElementById('completed-count');
+        const remainingCount = document.getElementById('remaining-count');
+        const timestampEl = document.getElementById('timestamp');
+
+        // ---------- app state ----------
+        // In Firebase mode, tasks is a map { key: {text,priority,time,completed,createdAt} }
+        // In localStorage mode, tasks is saved under 'obs_todo_tasks'
+        let tasks = {};
+        let dbRef = null;
+
+        // ---------- RENDER ----------
+        function renderTasks() {
+            taskListEl.innerHTML = '';
+            const keys = Object.keys(tasks).sort((a,b)=> (tasks[a].createdAt||0) - (tasks[b].createdAt||0));
+            if (keys.length === 0) {
+                taskListEl.innerHTML = '<div class="empty-state">No tasks yet — add one!</div>';
+            }
+            keys.forEach(key => {
+                const t = tasks[key];
+                const li = document.createElement('li');
+                li.className = 'task-item';
+                li.dataset.id = key;
+                li.innerHTML = `
+                    <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
+                    <span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
+                    <div class="task-meta">
+                        <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
+                        <span class="task-time">${t.completed ? 'Done' : (t.time || 'Pending')}</span>
+                    </div>
+                `;
+                // checkbox handler
+                li.querySelector('.task-checkbox').addEventListener('change', function() {
+                    const checked = this.checked;
+                    if (useFirebase) {
+                        firebase.database().ref('tasks/' + key).update({ completed: checked, time: checked ? 'Done' : 'Pending' });
+                    } else {
+                        tasks[key].completed = checked;
+                        tasks[key].time = checked ? 'Done' : 'Pending';
+                        saveLocal();
+                        renderTasks();
+                    }
+                });
+                taskListEl.appendChild(li);
+            });
+            updateProgressUI();
+        }
+
+        function updateProgressUI() {
+            const arr = Object.values(tasks);
+            const total = arr.length;
+            const done = arr.filter(t=>t.completed).length;
+            const pct = total > 0 ? Math.round((done/total)*100) : 0;
+            progressFill.style.width = pct + '%';
+            progressPercent.textContent = pct + '%';
+            completedCount.textContent = `${done} of ${total} completed`;
+            remainingCount.textContent = `${total - done} tasks remaining`;
+            const now = new Date();
+            const timeString = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+            timestampEl.textContent = `Updated: ${now.toLocaleDateString()} at ${timeString}`;
+        }
+
+        // ---------- ADD TASK ----------
+        addBtn.addEventListener('click', addNewTask);
+        inputEl.addEventListener('keypress', function(e){ if (e.key === 'Enter') addNewTask(); });
+
+        function addNewTask() {
+            const text = inputEl.value.trim();
+            if (!text) return;
+            const payload = { text, priority: 'medium', time: 'Pending', completed: false, createdAt: Date.now() };
+            if (useFirebase) {
+                const newRef = firebase.database().ref('tasks').push();
+                newRef.set(payload);
+            } else {
+                const key = 'local_' + Date.now();
+                tasks[key] = payload;
+                saveLocal();
+                renderTasks();
+            }
+            inputEl.value = '';
+        }
+
+        // ---------- FIREBASE SYNC ----------
+        if (useFirebase) {
+            dbRef = firebase.database().ref('tasks');
+            // initial attach: on value we'll re-populate tasks object and re-render
+            dbRef.on('value', snap => {
+                const val = snap.val() || {};
+                // convert firebase nulls
+                tasks = Object.keys(val).reduce((acc,k)=>{ acc[k]=val[k]; return acc; }, {});
+                renderTasks();
+            });
+            // keep local changes that happen (child_changed/added/removed could be used for finer control)
+        } else {
+            // load from localStorage
+            const raw = localStorage.getItem('obs_todo_tasks');
+            tasks = raw ? JSON.parse(raw) : {};
+            renderTasks();
+        }
+
+        function saveLocal() {
+            localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
+        }
+
+        // ---------- UTILS ----------
+        function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[s]; }); }
+        function priorityClass(p){ return p === 'high' ? 'priority-high' : (p === 'low' ? 'priority-low' : 'priority-medium'); }
+        function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+        // ---------- OPTIONAL: expose a manual refresh for OBS (hotkey friendly) ----------
+        window.refreshTasks = function(){ if (useFirebase) { firebase.database().ref('tasks').once('value').then(snap=>{ tasks = snap.val()||{}; renderTasks(); }); } else { const raw = localStorage.getItem('obs_todo_tasks'); tasks = raw?JSON.parse(raw):{}; renderTasks(); } }
+
+        // quick hint: when loaded in OBS, call window.refreshTasks() from the browser source's "Custom CSS/JS" or use the "Refresh browser when scene becomes active" checkbox in OBS if you want it to reload automatically.
+    </script>
+
+    <!-- End -->
+</body>
+</html>
