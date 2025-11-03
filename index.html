@@ -296,4 +296,25 @@
         } else {
             // load from localStorage
             const raw = localStorage.getItem('obs_todo_tasks');
-            tasks = raw ? JSON.parse(raw)
+            tasks = raw ? JSON.parse(raw) : {};
+            renderTasks();
+        }
+        
+        // Set initial view
+        setView('current');
+
+        function saveLocal() {
+            localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
+        }
+
+        // ---------- UTILS ----------
+        function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[s]; }); }
+        function priorityClass(p){ return p === 'high' ? 'priority-high' : (p === 'low' ? 'priority-low' : 'priority-medium'); }
+        function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+        // ---------- OPTIONAL: expose a manual refresh for OBS ----------
+        window.refreshTasks = function(){ if (useFirebase) { firebase.database().ref('tasks').once('value').then(snap=>{ tasks = snap.val()||{}; renderTasks(); }); } else { const raw = localStorage.getItem('obs_todo_tasks'); tasks = raw?JSON.parse(raw):{}; renderTasks(); } }
+
+    </script>
+</body>
+</html>
