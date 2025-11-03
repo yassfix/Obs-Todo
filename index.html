@@ -23,28 +23,12 @@
         .header h1{color:var(--primary);font-size:1.8rem;margin-bottom:3px}
         .header p{color:var(--primary-light);font-size:0.95rem}
         .focus-section{background-color:var(--card);border-radius:10px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.2)}
-        
-        /* --- Tab Styles Start --- */
-        .section-header{display:flex;align-items:center;margin-bottom:15px;border-bottom:2px solid var(--card); /* Moved border from .tab */}
-        .tab-list { display: flex; gap: 20px; }
-        .tab {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding-bottom: 10px;
-            border-bottom: 3px solid transparent;
-            opacity: 0.6;
-            transition: all 0.3s ease;
-        }
-        .tab h2 { font-size: 1.4rem; margin-left: 10px; }
-        .tab:hover { opacity: 1; }
-        .tab.active {
-            opacity: 1;
-            border-bottom-color: var(--primary);
-        }
-        .icon-completed { background-color: var(--secondary); }
-        /* --- Tab Styles End --- */
-
+        .section-header{display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid var(--primary)}
+        .section-header h2{font-size:1.4rem;margin-left:10px}
+        .tabs-container{display:flex;border-bottom:2px solid var(--primary);margin-bottom:15px}
+        .tab{flex:1;text-align:center;padding:10px 0;cursor:pointer;transition:all 0.3s;border-bottom:2px solid transparent}
+        .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:bold}
+        .tab:hover:not(.active){background-color:rgba(255,255,255,0.05)}
         .icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:bold;background-color:var(--accent)}
         .task-list{list-style-type:none;margin-bottom:20px}
         .task-item{display:flex;align-items:center;padding:12px 10px;margin-bottom:8px;background-color:rgba(255,255,255,.05);border-radius:8px;transition:all .3s}
@@ -78,22 +62,11 @@
             <p>What are you working on today?</p>
         </div>
         <div class="focus-section">
-            <div class="section-header">
-                <div class="tab-list">
-                    <div class="tab active" id="tab-current">
-                        <div class="icon">✓</div>
-                        <h2>Current Focus</h2>
-                    </div>
-                    <div class="tab" id="tab-completed">
-                        <div class="icon icon-completed">🏁</div>
-                        <h2>Completed</h2>
-                    </div>
-                </div>
+            <div class="tabs-container">
+                <div class="tab active" data-tab="active">Current Focus</div>
+                <div class="tab" data-tab="completed">Completed Tasks</div>
             </div>
-            
             <ul class="task-list" id="task-list"></ul>
-            <ul class="task-list" id="completed-task-list" style="display: none;"></ul>
-
             <div class="new-task">
                 <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
                 <button class="new-task-button" id="add-task-btn">Add</button>
@@ -115,6 +88,10 @@
         </div>
     </div>
 
+    <!-- ====== REALTIME BACKEND: Firebase Realtime Database (recommended) ======
+         Replace the firebaseConfig object below with your project's config.
+         If you don't want to use Firebase, the script will fall back to localStorage.
+    -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script>
@@ -132,6 +109,7 @@
 
         let useFirebase = false;
         try {
+            // basic detection: if apiKey still placeholder, we'll skip firebase
             if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_API_KEY')) {
                 firebase.initializeApp(firebaseConfig);
                 useFirebase = true;
@@ -143,10 +121,6 @@
 
         // ---------- DOM helpers ----------
         const taskListEl = document.getElementById('task-list');
-        const completedTaskListEl = document.getElementById('completed-task-list'); // New list
-        const tabCurrent = document.getElementById('tab-current');                 // New tab
-        const tabCompleted = document.getElementById('tab-completed');             // New tab
-        
         const inputEl = document.getElementById('new-task-input');
         const addBtn = document.getElementById('add-task-btn');
         const progressFill = document.getElementById('progress-fill');
@@ -154,100 +128,59 @@
         const completedCount = document.getElementById('completed-count');
         const remainingCount = document.getElementById('remaining-count');
         const timestampEl = document.getElementById('timestamp');
+        const tabs = document.querySelectorAll('.tab');
 
         // ---------- app state ----------
         let tasks = {};
         let dbRef = null;
-
-        // ---------- TAB/VIEW LOGIC ----------
-        function setView(view) {
-            if (view === 'current') {
-                // Show current, hide completed
-                tabCurrent.classList.add('active');
-                tabCompleted.classList.remove('active');
-                taskListEl.style.display = 'block';
-                completedTaskListEl.style.display = 'none';
-            } else {
-                // Show completed, hide current
-                tabCurrent.classList.remove('active');
-                tabCompleted.classList.add('active');
-                taskListEl.style.display = 'none';
-                completedTaskListEl.style.display = 'block';
-            }
-        }
-        
-        // Add listeners
-        tabCurrent.addEventListener('click', () => setView('current'));
-        tabCompleted.addEventListener('click', () => setView('completed'));
+        let currentTab = 'active'; // 'active' or 'completed'
 
         // ---------- RENDER ----------
-        
-        /**
-         * Creates a single task <li> element and attaches its event listener
-         */
-        function createTaskElement(key, t) {
-            const li = document.createElement('li');
-            li.className = 'task-item';
-            li.dataset.id = key;
-            li.innerHTML = `
-                <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
-                <span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
-                <div class="task-meta">
-                    <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
-                    <span class="task-time">${t.completed ? 'Done' : (t.time || 'Pending')}</span>
-                </div>
-            `;
-            // checkbox handler
-            li.querySelector('.task-checkbox').addEventListener('change', function() {
-                const checked = this.checked;
-                const updateData = { completed: checked, time: checked ? 'Done' : 'Pending' };
-                
-                if (useFirebase) {
-                    firebase.database().ref('tasks/' + key).update(updateData);
-                } else {
-                    tasks[key].completed = checked;
-                    tasks[key].time = checked ? 'Done' : 'Pending';
-                    saveLocal();
-                    renderTasks(); // Re-render in local mode
-                }
-            });
-            return li;
-        }
-        
-        /**
-         * Renders all tasks into their appropriate lists (current or completed)
-         */
         function renderTasks() {
-            // Clear both lists
             taskListEl.innerHTML = '';
-            completedTaskListEl.innerHTML = '';
-            
             const keys = Object.keys(tasks).sort((a,b)=> (tasks[a].createdAt||0) - (tasks[b].createdAt||0));
             
-            let currentCount = 0;
-            let completedCount = 0;
-
-            keys.forEach(key => {
-                const t = tasks[key];
-                const li = createTaskElement(key, t);
-                
-                if (t.completed) {
-                    completedTaskListEl.appendChild(li);
-                    completedCount++;
-                } else {
-                    taskListEl.appendChild(li);
-                    currentCount++;
-                }
+            // Filter tasks based on current tab
+            const filteredTasks = keys.filter(key => {
+                if (currentTab === 'active') return !tasks[key].completed;
+                if (currentTab === 'completed') return tasks[key].completed;
+                return true;
             });
-
-            // Add empty states if necessary
-            if (currentCount === 0) {
-                taskListEl.innerHTML = '<div class="empty-state">No active tasks!</div>';
-            }
-            if (completedCount === 0) {
-                completedTaskListEl.innerHTML = '<div class="empty-state">No completed tasks yet.</div>';
+            
+            if (filteredTasks.length === 0) {
+                const emptyMessage = currentTab === 'active' 
+                    ? 'No active tasks — add one!' 
+                    : 'No completed tasks yet';
+                taskListEl.innerHTML = `<div class="empty-state">${emptyMessage}</div>`;
             }
             
+            filteredTasks.forEach(key => {
+                const t = tasks[key];
+                const li = document.createElement('li');
+                li.className = 'task-item';
+                li.dataset.id = key;
+                li.innerHTML = `
+                    <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
+                    <span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
+                    <div class="task-meta">
+                        <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
+                        <span class="task-time">${t.completed ? 'Done' : (t.time || 'Pending')}</span>
+                    </div>
+                `;
+                // checkbox handler
+                li.querySelector('.task-checkbox').addEventListener('change', function() {
+                    const checked = this.checked;
+                    if (useFirebase) {
+                        firebase.database().ref('tasks/' + key).update({ completed: checked, time: checked ? 'Done' : 'Pending' });
+                    } else {
+                        tasks[key].completed = checked;
+                        tasks[key].time = checked ? 'Done' : 'Pending';
+                        saveLocal();
+                        renderTasks();
+                    }
+                });
+                taskListEl.appendChild(li);
+            });
             updateProgressUI();
         }
 
@@ -264,6 +197,16 @@
             const timeString = now.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
             timestampEl.textContent = `Updated: ${now.toLocaleDateString()} at ${timeString}`;
         }
+
+        // ---------- TAB HANDLING ----------
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                currentTab = this.dataset.tab;
+                renderTasks();
+            });
+        });
 
         // ---------- ADD TASK ----------
         addBtn.addEventListener('click', addNewTask);
@@ -288,20 +231,20 @@
         // ---------- FIREBASE SYNC ----------
         if (useFirebase) {
             dbRef = firebase.database().ref('tasks');
+            // initial attach: on value we'll re-populate tasks object and re-render
             dbRef.on('value', snap => {
                 const val = snap.val() || {};
+                // convert firebase nulls
                 tasks = Object.keys(val).reduce((acc,k)=>{ acc[k]=val[k]; return acc; }, {});
-                renderTasks(); // This will now sort into both lists
+                renderTasks();
             });
+            // keep local changes that happen (child_changed/added/removed could be used for finer control)
         } else {
             // load from localStorage
             const raw = localStorage.getItem('obs_todo_tasks');
             tasks = raw ? JSON.parse(raw) : {};
             renderTasks();
         }
-        
-        // Set initial view
-        setView('current');
 
         function saveLocal() {
             localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
@@ -312,9 +255,12 @@
         function priorityClass(p){ return p === 'high' ? 'priority-high' : (p === 'low' ? 'priority-low' : 'priority-medium'); }
         function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
 
-        // ---------- OPTIONAL: expose a manual refresh for OBS ----------
+        // ---------- OPTIONAL: expose a manual refresh for OBS (hotkey friendly) ----------
         window.refreshTasks = function(){ if (useFirebase) { firebase.database().ref('tasks').once('value').then(snap=>{ tasks = snap.val()||{}; renderTasks(); }); } else { const raw = localStorage.getItem('obs_todo_tasks'); tasks = raw?JSON.parse(raw):{}; renderTasks(); } }
 
+        // quick hint: when loaded in OBS, call window.refreshTasks() from the browser source's "Custom CSS/JS" or use the "Refresh browser when scene becomes active" checkbox in OBS if you want it to reload automatically.
     </script>
+
+    <!-- End -->
 </body>
 </html>
