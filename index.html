@@ -36,6 +36,7 @@
         .task-item.dragging{opacity:0.5;background-color:rgba(255,255,255,.2);cursor:grabbing;}
         .task-checkbox{margin-right:12px;width:18px;height:18px;accent-color:var(--secondary);cursor:pointer}
         .task-text{flex-grow:1;font-size:1rem;margin-right:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .task-input{flex-grow:1;padding:5px;border:none;border-radius:4px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:1rem;margin-right:15px}
         .task-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
         .task-priority{padding:3px 8px;border-radius:12px;font-size:.75rem;font-weight:bold;white-space:nowrap}
         .priority-high{background-color:var(--danger)}
@@ -59,6 +60,9 @@
         .new-task-button{padding:10px 15px;border:none;border-radius:6px;background-color:var(--primary);color:white;font-weight:bold;font-size:.9rem;cursor:pointer;white-space:nowrap}
         .empty-state{text-align:center;padding:20px;color:var(--primary-light);font-size:.9rem}
         .drag-handle{cursor:grab;margin-right:10px;color:var(--primary-light);}
+        .task-actions{display:flex;gap:5px;margin-left:5px;}
+        .action-btn{background:none;border:none;color:var(--primary-light);cursor:pointer;font-size:0.8rem;padding:2px 5px;border-radius:3px;display:flex;align-items:center;justify-content:center;}
+        .action-btn:hover{background-color:rgba(255,255,255,0.1);}
         @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-priority,.task-time{font-size:.7rem}}
     </style>
 </head>
@@ -138,6 +142,7 @@
         let currentTab = 'active';
         let timerIntervals = {};
         let dragSrcEl = null;
+        let editingTaskId = null;
 
         // Timer functions
         function formatTime(seconds) {
@@ -262,6 +267,56 @@
             });
         }
 
+        // Task removal function
+        function removeTask(taskId) {
+            if (confirm('Are you sure you want to remove this task?')) {
+                if (useFirebase) {
+                    firebase.database().ref('tasks/' + taskId).remove();
+                } else {
+                    delete tasks[taskId];
+                    saveAllTasks();
+                    renderTasks();
+                }
+            }
+        }
+
+        // Task editing functions
+        function startEditingTask(taskId) {
+            editingTaskId = taskId;
+            renderTasks();
+            
+            // Focus the input field after a short delay
+            setTimeout(() => {
+                const input = document.querySelector(`.task-item[data-id="${taskId}"] .task-input`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 10);
+        }
+
+        function saveTaskEdit(taskId) {
+            const input = document.querySelector(`.task-item[data-id="${taskId}"] .task-input`);
+            if (input) {
+                const newText = input.value.trim();
+                if (newText) {
+                    if (useFirebase) {
+                        firebase.database().ref('tasks/' + taskId).update({ text: newText });
+                    } else {
+                        tasks[taskId].text = newText;
+                        saveAllTasks();
+                    }
+                }
+            }
+            editingTaskId = null;
+            renderTasks();
+        }
+
+        function cancelTaskEdit() {
+            editingTaskId = null;
+            renderTasks();
+        }
+
         // Render functions
         function renderTasks() {
             taskListEl.innerHTML = '';
@@ -290,11 +345,11 @@
                 const t = tasks[key];
                 const li = document.createElement('li');
                 li.className = 'task-item';
-                li.draggable = currentTab === 'active'; // Only draggable in active tab
+                li.draggable = currentTab === 'active' && editingTaskId !== key; // Only draggable in active tab and not editing
                 li.dataset.id = key;
                 
                 // Drag and drop events for active tasks
-                if (currentTab === 'active') {
+                if (currentTab === 'active' && editingTaskId !== key) {
                     li.addEventListener('dragstart', handleDragStart, false);
                     li.addEventListener('dragenter', handleDragEnter, false);
                     li.addEventListener('dragover', handleDragOver, false);
@@ -312,19 +367,34 @@
                 // Check if timer is currently running
                 const isTimerRunning = timerIntervals[key] !== undefined;
                 
+                // Check if this task is being edited
+                const isEditing = editingTaskId === key;
+                
                 li.innerHTML = `
-                    ${currentTab === 'active' ? '<div class="drag-handle">≡</div>' : ''}
+                    ${currentTab === 'active' && !isEditing ? '<div class="drag-handle">≡</div>' : ''}
                     <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
-                    <span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
+                    ${isEditing ? 
+                        `<input type="text" class="task-input" value="${escapeHtml(t.text)}">` : 
+                        `<span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>`
+                    }
                     <div class="task-meta">
                         <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
                         <span class="task-time">${displayTime}</span>
-                        ${currentTab === 'active' && !t.completed ? 
+                        ${currentTab === 'active' && !t.completed && !isEditing ? 
                             `<div class="timer-controls">
                                 <button class="timer-btn ${isTimerRunning ? 'running' : ''}" data-action="start" ${isTimerRunning ? 'disabled' : ''}>▶</button>
                                 <button class="timer-btn" data-action="pause" ${!isTimerRunning ? 'disabled' : ''}>⏸</button>
                                 <button class="timer-btn" data-action="stop">⏹</button>
                             </div>` : ''}
+                        <div class="task-actions">
+                            ${isEditing ? 
+                                `<button class="action-btn" data-action="save" title="Save">✓</button>
+                                 <button class="action-btn" data-action="cancel" title="Cancel">✗</button>` :
+                                `${currentTab === 'active' && !t.completed ? 
+                                    `<button class="action-btn" data-action="edit" title="Edit">✏️</button>` : ''}
+                                 <button class="action-btn" data-action="remove" title="Remove">🗑️</button>`
+                            }
+                        </div>
                     </div>
                 `;
                 
@@ -349,7 +419,7 @@
                 });
                 
                 // Timer button handlers
-                if (currentTab === 'active' && !t.completed) {
+                if (currentTab === 'active' && !t.completed && !isEditing) {
                     const timerBtns = li.querySelectorAll('.timer-btn');
                     timerBtns.forEach(btn => {
                         btn.addEventListener('click', function() {
@@ -369,6 +439,47 @@
                             
                             renderTasks(); // Re-render to update button states
                         });
+                    });
+                }
+                
+                // Action button handlers
+                const actionBtns = li.querySelectorAll('.action-btn');
+                actionBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const action = this.dataset.action;
+                        
+                        switch(action) {
+                            case 'remove':
+                                removeTask(key);
+                                break;
+                            case 'edit':
+                                startEditingTask(key);
+                                break;
+                            case 'save':
+                                saveTaskEdit(key);
+                                break;
+                            case 'cancel':
+                                cancelTaskEdit();
+                                break;
+                        }
+                    });
+                });
+                
+                // Input handlers for editing
+                if (isEditing) {
+                    const input = li.querySelector('.task-input');
+                    input.addEventListener('keypress', function(e) {
+                        if (e.key === 'Enter') {
+                            saveTaskEdit(key);
+                        }
+                    });
+                    input.addEventListener('blur', function() {
+                        // Use setTimeout to allow click events to register before blur
+                        setTimeout(() => {
+                            if (editingTaskId === key) {
+                                saveTaskEdit(key);
+                            }
+                        }, 150);
                     });
                 }
                 
