@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compact Task Dashboard (OBS-ready, realtime)</title>
+    <title>Enhanced Task Dashboard (Timer + Reordering)</title>
     <style>
         :root {
             --primary: #6c5ce7;
@@ -31,8 +31,9 @@
         .tab:hover:not(.active){background-color:rgba(255,255,255,0.05)}
         .icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:bold;background-color:var(--accent)}
         .task-list{list-style-type:none;margin-bottom:20px}
-        .task-item{display:flex;align-items:center;padding:12px 10px;margin-bottom:8px;background-color:rgba(255,255,255,.05);border-radius:8px;transition:all .3s}
+        .task-item{display:flex;align-items:center;padding:12px 10px;margin-bottom:8px;background-color:rgba(255,255,255,.05);border-radius:8px;transition:all .3s;cursor:grab;}
         .task-item:hover{background-color:rgba(255,255,255,.1)}
+        .task-item.dragging{opacity:0.5;background-color:rgba(255,255,255,.2);cursor:grabbing;}
         .task-checkbox{margin-right:12px;width:18px;height:18px;accent-color:var(--secondary);cursor:pointer}
         .task-text{flex-grow:1;font-size:1rem;margin-right:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .task-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
@@ -40,7 +41,12 @@
         .priority-high{background-color:var(--danger)}
         .priority-medium{background-color:var(--warning);color:var(--background)}
         .priority-low{background-color:var(--primary-light);color:var(--background)}
-        .task-time{font-size:.8rem;color:var(--primary-light);white-space:nowrap}
+        .task-time{font-size:.8rem;color:var(--primary-light);white-space:nowrap;min-width: 70px;text-align: center;}
+        .timer-controls{display:flex;gap:5px;}
+        .timer-btn{background:none;border:none;color:var(--primary-light);cursor:pointer;font-size:0.8rem;padding:2px 5px;border-radius:3px;}
+        .timer-btn:hover{background-color:rgba(255,255,255,0.1);}
+        .timer-btn:disabled{color:rgba(255,255,255,0.3);cursor:not-allowed;}
+        .timer-btn.running{color:var(--secondary);}
         .completed{text-decoration:line-through;opacity:.7}
         .progress-container{margin-top:15px}
         .progress-header{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.9rem}
@@ -52,14 +58,15 @@
         .new-task-input{flex-grow:1;padding:10px 12px;border:none;border-radius:6px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:.9rem}
         .new-task-button{padding:10px 15px;border:none;border-radius:6px;background-color:var(--primary);color:white;font-weight:bold;font-size:.9rem;cursor:pointer;white-space:nowrap}
         .empty-state{text-align:center;padding:20px;color:var(--primary-light);font-size:.9rem}
+        .drag-handle{cursor:grab;margin-right:10px;color:var(--primary-light);}
         @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-priority,.task-time{font-size:.7rem}}
     </style>
 </head>
 <body>
     <div class="dashboard">
         <div class="header">
-            <h1>Task Focus Dashboard</h1>
-            <p>What are you working on today?</p>
+            <h1>Enhanced Task Dashboard</h1>
+            <p>Drag tasks to reorder • Timers track your time spent</p>
         </div>
         <div class="focus-section">
             <div class="tabs-container">
@@ -88,14 +95,10 @@
         </div>
     </div>
 
-    <!-- ====== REALTIME BACKEND: Firebase Realtime Database (recommended) ======
-         Replace the firebaseConfig object below with your project's config.
-         If you don't want to use Firebase, the script will fall back to localStorage.
-    -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script>
-        // ---------- CONFIG: paste your Firebase project's config here ----------
+        // Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDEEMO9MlcNsb_QLIRTDJM4rXqxGZuYJps",
             authDomain: "obs-todo-68da2.firebaseapp.com",
@@ -109,7 +112,6 @@
 
         let useFirebase = false;
         try {
-            // basic detection: if apiKey still placeholder, we'll skip firebase
             if (firebaseConfig.apiKey && !firebaseConfig.apiKey.includes('YOUR_API_KEY')) {
                 firebase.initializeApp(firebaseConfig);
                 useFirebase = true;
@@ -119,7 +121,7 @@
             useFirebase = false;
         }
 
-        // ---------- DOM helpers ----------
+        // DOM elements
         const taskListEl = document.getElementById('task-list');
         const inputEl = document.getElementById('new-task-input');
         const addBtn = document.getElementById('add-task-btn');
@@ -130,15 +132,145 @@
         const timestampEl = document.getElementById('timestamp');
         const tabs = document.querySelectorAll('.tab');
 
-        // ---------- app state ----------
+        // App state
         let tasks = {};
         let dbRef = null;
-        let currentTab = 'active'; // 'active' or 'completed'
+        let currentTab = 'active';
+        let timerIntervals = {};
+        let dragSrcEl = null;
 
-        // ---------- RENDER ----------
+        // Timer functions
+        function formatTime(seconds) {
+            const hrs = Math.floor(seconds / 3600);
+            const mins = Math.floor((seconds % 3600) / 60);
+            const secs = seconds % 60;
+            return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer(taskId) {
+            if (timerIntervals[taskId]) return; // Timer already running
+            
+            const task = tasks[taskId];
+            if (!task.timerStartTime) {
+                task.timerStartTime = Date.now();
+            }
+            
+            timerIntervals[taskId] = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - task.timerStartTime) / 1000);
+                task.timeSpent = (task.timeSpent || 0) + elapsed;
+                task.timerStartTime = Date.now();
+                
+                updateTaskInStorage(taskId);
+                updateTaskDisplay(taskId);
+            }, 1000);
+            
+            updateTaskInStorage(taskId);
+            updateTaskDisplay(taskId);
+        }
+
+        function pauseTimer(taskId) {
+            if (timerIntervals[taskId]) {
+                clearInterval(timerIntervals[taskId]);
+                delete timerIntervals[taskId];
+                
+                const task = tasks[taskId];
+                if (task.timerStartTime) {
+                    const elapsed = Math.floor((Date.now() - task.timerStartTime) / 1000);
+                    task.timeSpent = (task.timeSpent || 0) + elapsed;
+                    task.timerStartTime = null;
+                }
+                
+                updateTaskInStorage(taskId);
+                updateTaskDisplay(taskId);
+            }
+        }
+
+        function stopTimer(taskId) {
+            pauseTimer(taskId);
+            
+            const task = tasks[taskId];
+            task.timerStartTime = null;
+            
+            updateTaskInStorage(taskId);
+            updateTaskDisplay(taskId);
+        }
+
+        // Drag and drop functions
+        function handleDragStart(e) {
+            if (currentTab !== 'active') return;
+            
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            
+            this.classList.add('dragging');
+        }
+
+        function handleDragOver(e) {
+            if (e.preventDefault) {
+                e.preventDefault();
+            }
+            e.dataTransfer.dropEffect = 'move';
+            return false;
+        }
+
+        function handleDragEnter(e) {
+            this.classList.add('over');
+        }
+
+        function handleDragLeave(e) {
+            this.classList.remove('over');
+        }
+
+        function handleDrop(e) {
+            if (e.stopPropagation) {
+                e.stopPropagation();
+            }
+            
+            if (dragSrcEl !== this) {
+                const taskItems = Array.from(taskListEl.querySelectorAll('.task-item'));
+                const srcIndex = taskItems.indexOf(dragSrcEl);
+                const destIndex = taskItems.indexOf(this);
+                
+                if (srcIndex !== -1 && destIndex !== -1) {
+                    // Reorder tasks in the data structure
+                    const taskKeys = Object.keys(tasks).filter(key => !tasks[key].completed);
+                    const movedKey = taskKeys[srcIndex];
+                    
+                    // Remove from current position
+                    taskKeys.splice(srcIndex, 1);
+                    // Insert at new position
+                    taskKeys.splice(destIndex, 0, movedKey);
+                    
+                    // Update order in tasks object
+                    taskKeys.forEach((key, index) => {
+                        tasks[key].order = index;
+                    });
+                    
+                    // Save and re-render
+                    saveAllTasks();
+                    renderTasks();
+                }
+            }
+            
+            return false;
+        }
+
+        function handleDragEnd(e) {
+            document.querySelectorAll('.task-item').forEach(item => {
+                item.classList.remove('over', 'dragging');
+            });
+        }
+
+        // Render functions
         function renderTasks() {
             taskListEl.innerHTML = '';
-            const keys = Object.keys(tasks).sort((a,b)=> (tasks[a].createdAt||0) - (tasks[b].createdAt||0));
+            const keys = Object.keys(tasks).sort((a, b) => {
+                // Sort by order if available, otherwise by creation date
+                const orderA = tasks[a].order !== undefined ? tasks[a].order : tasks[a].createdAt || 0;
+                const orderB = tasks[b].order !== undefined ? tasks[b].order : tasks[b].createdAt || 0;
+                return orderA - orderB;
+            });
             
             // Filter tasks based on current tab
             const filteredTasks = keys.filter(key => {
@@ -158,30 +290,103 @@
                 const t = tasks[key];
                 const li = document.createElement('li');
                 li.className = 'task-item';
+                li.draggable = currentTab === 'active'; // Only draggable in active tab
                 li.dataset.id = key;
+                
+                // Drag and drop events for active tasks
+                if (currentTab === 'active') {
+                    li.addEventListener('dragstart', handleDragStart, false);
+                    li.addEventListener('dragenter', handleDragEnter, false);
+                    li.addEventListener('dragover', handleDragOver, false);
+                    li.addEventListener('dragleave', handleDragLeave, false);
+                    li.addEventListener('drop', handleDrop, false);
+                    li.addEventListener('dragend', handleDragEnd, false);
+                }
+                
+                // Calculate display time
+                let displayTime = '00:00:00';
+                if (t.timeSpent) {
+                    displayTime = formatTime(t.timeSpent);
+                }
+                
+                // Check if timer is currently running
+                const isTimerRunning = timerIntervals[key] !== undefined;
+                
                 li.innerHTML = `
+                    ${currentTab === 'active' ? '<div class="drag-handle">≡</div>' : ''}
                     <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
                     <span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>
                     <div class="task-meta">
                         <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
-                        <span class="task-time">${t.completed ? 'Done' : (t.time || 'Pending')}</span>
+                        <span class="task-time">${displayTime}</span>
+                        ${currentTab === 'active' && !t.completed ? 
+                            `<div class="timer-controls">
+                                <button class="timer-btn ${isTimerRunning ? 'running' : ''}" data-action="start" ${isTimerRunning ? 'disabled' : ''}>▶</button>
+                                <button class="timer-btn" data-action="pause" ${!isTimerRunning ? 'disabled' : ''}>⏸</button>
+                                <button class="timer-btn" data-action="stop">⏹</button>
+                            </div>` : ''}
                     </div>
                 `;
-                // checkbox handler
+                
+                // Checkbox handler
                 li.querySelector('.task-checkbox').addEventListener('change', function() {
                     const checked = this.checked;
+                    if (checked) {
+                        // Stop timer when task is completed
+                        stopTimer(key);
+                    }
+                    
                     if (useFirebase) {
-                        firebase.database().ref('tasks/' + key).update({ completed: checked, time: checked ? 'Done' : 'Pending' });
+                        firebase.database().ref('tasks/' + key).update({ 
+                            completed: checked,
+                            timeSpent: tasks[key].timeSpent || 0
+                        });
                     } else {
                         tasks[key].completed = checked;
-                        tasks[key].time = checked ? 'Done' : 'Pending';
-                        saveLocal();
+                        saveAllTasks();
                         renderTasks();
                     }
                 });
+                
+                // Timer button handlers
+                if (currentTab === 'active' && !t.completed) {
+                    const timerBtns = li.querySelectorAll('.timer-btn');
+                    timerBtns.forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const action = this.dataset.action;
+                            
+                            switch(action) {
+                                case 'start':
+                                    startTimer(key);
+                                    break;
+                                case 'pause':
+                                    pauseTimer(key);
+                                    break;
+                                case 'stop':
+                                    stopTimer(key);
+                                    break;
+                            }
+                            
+                            renderTasks(); // Re-render to update button states
+                        });
+                    });
+                }
+                
                 taskListEl.appendChild(li);
             });
+            
             updateProgressUI();
+        }
+
+        function updateTaskDisplay(taskId) {
+            const taskEl = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            if (taskEl) {
+                const task = tasks[taskId];
+                const timeEl = taskEl.querySelector('.task-time');
+                if (timeEl) {
+                    timeEl.textContent = formatTime(task.timeSpent || 0);
+                }
+            }
         }
 
         function updateProgressUI() {
@@ -198,7 +403,7 @@
             timestampEl.textContent = `Updated: ${now.toLocaleDateString()} at ${timeString}`;
         }
 
-        // ---------- TAB HANDLING ----------
+        // Tab handling
         tabs.forEach(tab => {
             tab.addEventListener('click', function() {
                 tabs.forEach(t => t.classList.remove('active'));
@@ -208,59 +413,112 @@
             });
         });
 
-        // ---------- ADD TASK ----------
+        // Add task
         addBtn.addEventListener('click', addNewTask);
         inputEl.addEventListener('keypress', function(e){ if (e.key === 'Enter') addNewTask(); });
 
         function addNewTask() {
             const text = inputEl.value.trim();
             if (!text) return;
-            const payload = { text, priority: 'medium', time: 'Pending', completed: false, createdAt: Date.now() };
+            
+            // Calculate next order value
+            const activeTasks = Object.values(tasks).filter(t => !t.completed);
+            const nextOrder = activeTasks.length > 0 ? 
+                Math.max(...activeTasks.map(t => t.order || 0)) + 1 : 0;
+            
+            const payload = { 
+                text, 
+                priority: 'medium', 
+                completed: false, 
+                createdAt: Date.now(),
+                order: nextOrder,
+                timeSpent: 0
+            };
+            
             if (useFirebase) {
                 const newRef = firebase.database().ref('tasks').push();
                 newRef.set(payload);
             } else {
                 const key = 'local_' + Date.now();
                 tasks[key] = payload;
-                saveLocal();
+                saveAllTasks();
                 renderTasks();
             }
             inputEl.value = '';
         }
 
-        // ---------- FIREBASE SYNC ----------
+        // Storage functions
+        function updateTaskInStorage(taskId) {
+            if (useFirebase) {
+                firebase.database().ref('tasks/' + taskId).update({
+                    timeSpent: tasks[taskId].timeSpent || 0,
+                    timerStartTime: tasks[taskId].timerStartTime || null
+                });
+            } else {
+                saveAllTasks();
+            }
+        }
+
+        function saveAllTasks() {
+            if (!useFirebase) {
+                localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
+            }
+        }
+
+        // Firebase sync
         if (useFirebase) {
             dbRef = firebase.database().ref('tasks');
-            // initial attach: on value we'll re-populate tasks object and re-render
             dbRef.on('value', snap => {
                 const val = snap.val() || {};
-                // convert firebase nulls
-                tasks = Object.keys(val).reduce((acc,k)=>{ acc[k]=val[k]; return acc; }, {});
+                tasks = Object.keys(val).reduce((acc,k)=>{ 
+                    acc[k] = val[k]; 
+                    // Ensure all tasks have required properties
+                    if (!acc[k].hasOwnProperty('timeSpent')) acc[k].timeSpent = 0;
+                    if (!acc[k].hasOwnProperty('order')) acc[k].order = 0;
+                    return acc; 
+                }, {});
+                
+                // Restart any running timers
+                Object.keys(tasks).forEach(key => {
+                    if (tasks[key].timerStartTime && !tasks[key].completed) {
+                        startTimer(key);
+                    }
+                });
+                
                 renderTasks();
             });
-            // keep local changes that happen (child_changed/added/removed could be used for finer control)
         } else {
-            // load from localStorage
+            // Load from localStorage
             const raw = localStorage.getItem('obs_todo_tasks');
             tasks = raw ? JSON.parse(raw) : {};
+            
+            // Ensure all tasks have required properties
+            Object.keys(tasks).forEach(key => {
+                if (!tasks[key].hasOwnProperty('timeSpent')) tasks[key].timeSpent = 0;
+                if (!tasks[key].hasOwnProperty('order')) tasks[key].order = 0;
+            });
+            
             renderTasks();
         }
 
-        function saveLocal() {
-            localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
-        }
-
-        // ---------- UTILS ----------
+        // Utility functions
         function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[s]; }); }
         function priorityClass(p){ return p === 'high' ? 'priority-high' : (p === 'low' ? 'priority-low' : 'priority-medium'); }
         function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
 
-        // ---------- OPTIONAL: expose a manual refresh for OBS (hotkey friendly) ----------
-        window.refreshTasks = function(){ if (useFirebase) { firebase.database().ref('tasks').once('value').then(snap=>{ tasks = snap.val()||{}; renderTasks(); }); } else { const raw = localStorage.getItem('obs_todo_tasks'); tasks = raw?JSON.parse(raw):{}; renderTasks(); } }
-
-        // quick hint: when loaded in OBS, call window.refreshTasks() from the browser source's "Custom CSS/JS" or use the "Refresh browser when scene becomes active" checkbox in OBS if you want it to reload automatically.
+        // Manual refresh for OBS
+        window.refreshTasks = function(){ 
+            if (useFirebase) { 
+                firebase.database().ref('tasks').once('value').then(snap=>{ 
+                    tasks = snap.val()||{}; 
+                    renderTasks(); 
+                }); 
+            } else { 
+                const raw = localStorage.getItem('obs_todo_tasks'); 
+                tasks = raw?JSON.parse(raw):{}; 
+                renderTasks(); 
+            } 
+        }
     </script>
-
-    <!-- End -->
 </body>
 </html>
