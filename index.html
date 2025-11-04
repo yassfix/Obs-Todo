@@ -38,10 +38,6 @@
         .task-text{flex-grow:1;font-size:1rem;margin-right:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
         .task-input{flex-grow:1;padding:5px;border:none;border-radius:4px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:1rem;margin-right:15px}
         .task-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
-        .task-priority{padding:3px 8px;border-radius:12px;font-size:.75rem;font-weight:bold;white-space:nowrap}
-        .priority-high{background-color:var(--danger)}
-        .priority-medium{background-color:var(--warning);color:var(--background)}
-        .priority-low{background-color:var(--primary-light);color:var(--background)}
         .task-time{font-size:.8rem;color:var(--primary-light);white-space:nowrap;min-width: 70px;text-align: center;}
         .timer-controls{display:flex;gap:5px;}
         .timer-btn{background:none;border:none;color:var(--primary-light);cursor:pointer;font-size:0.8rem;padding:2px 5px;border-radius:3px;}
@@ -69,7 +65,19 @@
         .action-btn:hover{background-color:rgba(255,255,255,0.1);}
         .completion-date{font-size:0.7rem;color:var(--primary-light);margin-top:2px;font-style:italic;}
         .task-content{flex-grow:1;display:flex;flex-direction:column;margin-right:15px;overflow:hidden;}
-        @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-priority,.task-time{font-size:.7rem}}
+        .dropdown-container{display:flex;gap:10px;margin-bottom:5px;flex-wrap:wrap;}
+        .dropdown{position:relative;min-width:120px;}
+        .dropdown-button{background-color:rgba(255,255,255,.1);border:none;color:var(--text);padding:5px 10px;border-radius:4px;cursor:pointer;font-size:0.8rem;display:flex;justify-content:space-between;align-items:center;width:100%;}
+        .dropdown-button:hover{background-color:rgba(255,255,255,.15);}
+        .dropdown-content{display:none;position:absolute;background-color:var(--card);min-width:160px;box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2);z-index:1;border-radius:4px;padding:5px;max-height:200px;overflow-y:auto;}
+        .dropdown-content.show{display:block;}
+        .dropdown-item{padding:8px 12px;cursor:pointer;border-radius:3px;font-size:0.8rem;}
+        .dropdown-item:hover{background-color:rgba(255,255,255,.1);}
+        .dropdown-item.active{background-color:var(--primary);}
+        .add-item-form{display:flex;margin-top:5px;gap:5px;}
+        .add-item-input{flex-grow:1;padding:5px;border:none;border-radius:4px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:0.8rem;}
+        .add-item-button{padding:5px 8px;border:none;border-radius:4px;background-color:var(--secondary);color:white;font-size:0.8rem;cursor:pointer;}
+        @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-time{font-size:.7rem}}
     </style>
 </head>
 <body>
@@ -165,6 +173,10 @@
         let dragSrcEl = null;
         let editingTaskId = null;
         let lifetimeTotalSeconds = 0;
+
+        // Default categories and task types
+        let categories = ['Work', 'Personal', 'Shopping'];
+        let taskTypes = ['Urgent', 'Important', 'Optional'];
 
         // Utility function to check if a date is today
         function isToday(date) {
@@ -424,6 +436,96 @@
             renderTasks();
         }
 
+        // Dropdown functions
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            dropdown.classList.toggle('show');
+        }
+
+        function selectCategory(taskId, category) {
+            if (useFirebase) {
+                firebase.database().ref('tasks/' + taskId).update({ category: category });
+            } else {
+                tasks[taskId].category = category;
+                saveAllTasks();
+            }
+            renderTasks();
+        }
+
+        function selectTaskType(taskId, taskType) {
+            if (useFirebase) {
+                firebase.database().ref('tasks/' + taskId).update({ taskType: taskType });
+            } else {
+                tasks[taskId].taskType = taskType;
+                saveAllTasks();
+            }
+            renderTasks();
+        }
+
+        function addCategory(newCategory) {
+            if (newCategory && !categories.includes(newCategory)) {
+                categories.push(newCategory);
+                saveCategories();
+                renderTasks();
+            }
+        }
+
+        function addTaskType(newTaskType) {
+            if (newTaskType && !taskTypes.includes(newTaskType)) {
+                taskTypes.push(newTaskType);
+                saveTaskTypes();
+                renderTasks();
+            }
+        }
+
+        function saveCategories() {
+            if (useFirebase) {
+                firebase.database().ref('categories').set(categories);
+            } else {
+                localStorage.setItem('obs_todo_categories', JSON.stringify(categories));
+            }
+        }
+
+        function saveTaskTypes() {
+            if (useFirebase) {
+                firebase.database().ref('taskTypes').set(taskTypes);
+            } else {
+                localStorage.setItem('obs_todo_taskTypes', JSON.stringify(taskTypes));
+            }
+        }
+
+        function loadCategories() {
+            if (useFirebase) {
+                firebase.database().ref('categories').once('value').then(snap => {
+                    const storedCategories = snap.val();
+                    if (storedCategories && storedCategories.length > 0) {
+                        categories = storedCategories;
+                    }
+                });
+            } else {
+                const stored = localStorage.getItem('obs_todo_categories');
+                if (stored) {
+                    categories = JSON.parse(stored);
+                }
+            }
+        }
+
+        function loadTaskTypes() {
+            if (useFirebase) {
+                firebase.database().ref('taskTypes').once('value').then(snap => {
+                    const storedTaskTypes = snap.val();
+                    if (storedTaskTypes && storedTaskTypes.length > 0) {
+                        taskTypes = storedTaskTypes;
+                    }
+                });
+            } else {
+                const stored = localStorage.getItem('obs_todo_taskTypes');
+                if (stored) {
+                    taskTypes = JSON.parse(stored);
+                }
+            }
+        }
+
         // Render functions
         function renderTasks() {
             taskListEl.innerHTML = '';
@@ -477,6 +579,10 @@
                 // Check if this task is being edited
                 const isEditing = editingTaskId === key;
                 
+                // Get current category and task type
+                const currentCategory = t.category || categories[0];
+                const currentTaskType = t.taskType || taskTypes[0];
+                
                 // Create completion date text if task is completed
                 const completionDate = t.completedAt ? 
                     `<div class="completion-date">Completed: ${formatDate(t.completedAt)}</div>` : '';
@@ -485,6 +591,42 @@
                     ${currentTab === 'active' && !isEditing ? '<div class="drag-handle">≡</div>' : ''}
                     <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''}>
                     <div class="task-content">
+                        <div class="dropdown-container">
+                            <div class="dropdown">
+                                <button class="dropdown-button" onclick="toggleDropdown('category-dropdown-${key}')">
+                                    ${currentCategory} ▼
+                                </button>
+                                <div class="dropdown-content" id="category-dropdown-${key}">
+                                    ${categories.map(cat => `
+                                        <div class="dropdown-item ${cat === currentCategory ? 'active' : ''}" 
+                                             onclick="selectCategory('${key}', '${escapeHtml(cat)}')">
+                                            ${escapeHtml(cat)}
+                                        </div>
+                                    `).join('')}
+                                    <div class="add-item-form">
+                                        <input type="text" class="add-item-input" id="new-category-${key}" placeholder="New category">
+                                        <button class="add-item-button" onclick="addCategory(document.getElementById('new-category-${key}').value); document.getElementById('new-category-${key}').value='';">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="dropdown-button" onclick="toggleDropdown('tasktype-dropdown-${key}')">
+                                    ${currentTaskType} ▼
+                                </button>
+                                <div class="dropdown-content" id="tasktype-dropdown-${key}">
+                                    ${taskTypes.map(type => `
+                                        <div class="dropdown-item ${type === currentTaskType ? 'active' : ''}" 
+                                             onclick="selectTaskType('${key}', '${escapeHtml(type)}')">
+                                            ${escapeHtml(type)}
+                                        </div>
+                                    `).join('')}
+                                    <div class="add-item-form">
+                                        <input type="text" class="add-item-input" id="new-tasktype-${key}" placeholder="New task type">
+                                        <button class="add-item-button" onclick="addTaskType(document.getElementById('new-tasktype-${key}').value); document.getElementById('new-tasktype-${key}').value='';">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         ${isEditing ? 
                             `<input type="text" class="task-input" value="${escapeHtml(t.text)}">` : 
                             `<span class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</span>`
@@ -492,7 +634,6 @@
                         ${t.completed && !isEditing ? completionDate : ''}
                     </div>
                     <div class="task-meta">
-                        <span class="task-priority ${priorityClass(t.priority)}">${capitalize(t.priority||'medium')}</span>
                         <span class="task-time">${displayTime}</span>
                         ${currentTab === 'active' && !t.completed && !isEditing ? 
                             `<div class="timer-controls">
@@ -679,12 +820,13 @@
             
             const payload = { 
                 text, 
-                priority: 'medium', 
                 completed: false, 
                 createdAt: Date.now(),
                 order: nextOrder,
                 timeSpent: 0,
-                lastUpdated: Date.now()
+                lastUpdated: Date.now(),
+                category: categories[0],
+                taskType: taskTypes[0]
             };
             
             if (useFirebase) {
@@ -706,7 +848,9 @@
                 firebase.database().ref('tasks/' + taskId).update({
                     timeSpent: tasks[taskId].timeSpent || 0,
                     timerStartTime: tasks[taskId].timerStartTime || null,
-                    lastUpdated: tasks[taskId].lastUpdated
+                    lastUpdated: tasks[taskId].lastUpdated,
+                    category: tasks[taskId].category || categories[0],
+                    taskType: tasks[taskId].taskType || taskTypes[0]
                 });
             } else {
                 saveAllTasks();
@@ -730,6 +874,8 @@
                     if (!acc[k].hasOwnProperty('timeSpent')) acc[k].timeSpent = 0;
                     if (!acc[k].hasOwnProperty('order')) acc[k].order = 0;
                     if (!acc[k].hasOwnProperty('lastUpdated')) acc[k].lastUpdated = Date.now();
+                    if (!acc[k].hasOwnProperty('category')) acc[k].category = categories[0];
+                    if (!acc[k].hasOwnProperty('taskType')) acc[k].taskType = taskTypes[0];
                     return acc; 
                 }, {});
                 
@@ -745,6 +891,9 @@
             
             // Load lifetime total
             loadLifetimeTotal();
+            // Load categories and task types
+            loadCategories();
+            loadTaskTypes();
         } else {
             // Load from localStorage
             const raw = localStorage.getItem('obs_todo_tasks');
@@ -755,17 +904,32 @@
                 if (!tasks[key].hasOwnProperty('timeSpent')) tasks[key].timeSpent = 0;
                 if (!tasks[key].hasOwnProperty('order')) tasks[key].order = 0;
                 if (!tasks[key].hasOwnProperty('lastUpdated')) tasks[key].lastUpdated = Date.now();
+                if (!tasks[key].hasOwnProperty('category')) tasks[key].category = categories[0];
+                if (!tasks[key].hasOwnProperty('taskType')) tasks[key].taskType = taskTypes[0];
             });
             
             // Load lifetime total
             loadLifetimeTotal();
+            // Load categories and task types
+            loadCategories();
+            loadTaskTypes();
             renderTasks();
         }
 
         // Utility functions
         function escapeHtml(str){ return (str+'').replace(/[&<>"']/g, function(s){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[s]; }); }
-        function priorityClass(p){ return p === 'high' ? 'priority-high' : (p === 'low' ? 'priority-low' : 'priority-medium'); }
-        function capitalize(s){ return (s||'').charAt(0).toUpperCase() + (s||'').slice(1); }
+
+        // Close dropdowns when clicking outside
+        window.addEventListener('click', function(e) {
+            if (!e.target.matches('.dropdown-button')) {
+                const dropdowns = document.querySelectorAll('.dropdown-content');
+                dropdowns.forEach(dropdown => {
+                    if (dropdown.classList.contains('show')) {
+                        dropdown.classList.remove('show');
+                    }
+                });
+            }
+        });
 
         // Manual refresh for OBS
         window.refreshTasks = function(){ 
