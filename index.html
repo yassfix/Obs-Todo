@@ -54,6 +54,10 @@
         .progress-bar{height:8px;background-color:rgba(255,255,255,.1);border-radius:4px;overflow:hidden}
         .progress-fill{height:100%;background-color:var(--secondary);border-radius:4px;transition:width .5s}
         .stats{display:flex;justify-content:space-between;margin-top:10px;font-size:.85rem;color:var(--primary-light)}
+        .time-stats{display:flex;justify-content:space-between;margin-top:15px;padding:10px;background-color:rgba(255,255,255,.05);border-radius:8px;}
+        .time-stat{display:flex;flex-direction:column;align-items:center;flex:1;}
+        .time-stat-value{font-size:1.2rem;font-weight:bold;color:var(--secondary);}
+        .time-stat-label{font-size:0.75rem;color:var(--primary-light);margin-top:5px;}
         .footer{text-align:center;margin-top:15px;color:var(--primary-light);font-size:.85rem}
         .new-task{display:flex;margin-top:15px;gap:8px}
         .new-task-input{flex-grow:1;padding:10px 12px;border:none;border-radius:6px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:.9rem}
@@ -77,6 +81,19 @@
                 <div class="tab active" data-tab="active">Current Focus</div>
                 <div class="tab" data-tab="completed">Completed Tasks</div>
             </div>
+            
+            <!-- Time Statistics Section -->
+            <div class="time-stats">
+                <div class="time-stat">
+                    <div class="time-stat-value" id="daily-total">00:00:00</div>
+                    <div class="time-stat-label">Today</div>
+                </div>
+                <div class="time-stat">
+                    <div class="time-stat-value" id="lifetime-total">00:00:00</div>
+                    <div class="time-stat-label">Lifetime</div>
+                </div>
+            </div>
+            
             <ul class="task-list" id="task-list"></ul>
             <div class="new-task">
                 <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
@@ -135,6 +152,8 @@
         const remainingCount = document.getElementById('remaining-count');
         const timestampEl = document.getElementById('timestamp');
         const tabs = document.querySelectorAll('.tab');
+        const dailyTotalEl = document.getElementById('daily-total');
+        const lifetimeTotalEl = document.getElementById('lifetime-total');
 
         // App state
         let tasks = {};
@@ -143,6 +162,7 @@
         let timerIntervals = {};
         let dragSrcEl = null;
         let editingTaskId = null;
+        let lifetimeTotalSeconds = 0;
 
         // Timer functions
         function formatTime(seconds) {
@@ -165,8 +185,13 @@
                 task.timeSpent = (task.timeSpent || 0) + elapsed;
                 task.timerStartTime = Date.now();
                 
+                // Update lifetime total
+                lifetimeTotalSeconds += elapsed;
+                saveLifetimeTotal();
+                
                 updateTaskInStorage(taskId);
                 updateTaskDisplay(taskId);
+                updateTimeStats();
             }, 1000);
             
             updateTaskInStorage(taskId);
@@ -183,10 +208,15 @@
                     const elapsed = Math.floor((Date.now() - task.timerStartTime) / 1000);
                     task.timeSpent = (task.timeSpent || 0) + elapsed;
                     task.timerStartTime = null;
+                    
+                    // Update lifetime total
+                    lifetimeTotalSeconds += elapsed;
+                    saveLifetimeTotal();
                 }
                 
                 updateTaskInStorage(taskId);
                 updateTaskDisplay(taskId);
+                updateTimeStats();
             }
         }
 
@@ -198,6 +228,56 @@
             
             updateTaskInStorage(taskId);
             updateTaskDisplay(taskId);
+        }
+
+        // Time statistics functions
+        function calculateDailyTotal() {
+            const today = new Date().toDateString();
+            let totalSeconds = 0;
+            
+            Object.values(tasks).forEach(task => {
+                // Check if task was completed today or has time spent today
+                if (task.completedAt) {
+                    const completedDate = new Date(task.completedAt).toDateString();
+                    if (completedDate === today) {
+                        totalSeconds += task.timeSpent || 0;
+                    }
+                } else if (task.timeSpent && task.lastUpdated) {
+                    const lastUpdatedDate = new Date(task.lastUpdated).toDateString();
+                    if (lastUpdatedDate === today) {
+                        totalSeconds += task.timeSpent || 0;
+                    }
+                }
+            });
+            
+            return totalSeconds;
+        }
+
+        function updateTimeStats() {
+            const dailyTotalSeconds = calculateDailyTotal();
+            dailyTotalEl.textContent = formatTime(dailyTotalSeconds);
+            lifetimeTotalEl.textContent = formatTime(lifetimeTotalSeconds);
+        }
+
+        function loadLifetimeTotal() {
+            if (useFirebase) {
+                firebase.database().ref('lifetimeTotal').once('value').then(snap => {
+                    lifetimeTotalSeconds = snap.val() || 0;
+                    updateTimeStats();
+                });
+            } else {
+                const stored = localStorage.getItem('obs_todo_lifetime_total');
+                lifetimeTotalSeconds = stored ? parseInt(stored) : 0;
+                updateTimeStats();
+            }
+        }
+
+        function saveLifetimeTotal() {
+            if (useFirebase) {
+                firebase.database().ref('lifetimeTotal').set(lifetimeTotalSeconds);
+            } else {
+                localStorage.setItem('obs_todo_lifetime_total', lifetimeTotalSeconds.toString());
+            }
         }
 
         // Drag and drop functions
@@ -404,11 +484,16 @@
                     if (checked) {
                         // Stop timer when task is completed
                         stopTimer(key);
+                        // Set completion date
+                        tasks[key].completedAt = Date.now();
+                    } else {
+                        tasks[key].completedAt = null;
                     }
                     
                     if (useFirebase) {
                         firebase.database().ref('tasks/' + key).update({ 
                             completed: checked,
+                            completedAt: tasks[key].completedAt,
                             timeSpent: tasks[key].timeSpent || 0
                         });
                     } else {
@@ -416,6 +501,7 @@
                         saveAllTasks();
                         renderTasks();
                     }
+                    updateTimeStats();
                 });
                 
                 // Timer button handlers
@@ -487,6 +573,7 @@
             });
             
             updateProgressUI();
+            updateTimeStats();
         }
 
         function updateTaskDisplay(taskId) {
@@ -543,7 +630,8 @@
                 completed: false, 
                 createdAt: Date.now(),
                 order: nextOrder,
-                timeSpent: 0
+                timeSpent: 0,
+                lastUpdated: Date.now()
             };
             
             if (useFirebase) {
@@ -560,10 +648,12 @@
 
         // Storage functions
         function updateTaskInStorage(taskId) {
+            tasks[taskId].lastUpdated = Date.now();
             if (useFirebase) {
                 firebase.database().ref('tasks/' + taskId).update({
                     timeSpent: tasks[taskId].timeSpent || 0,
-                    timerStartTime: tasks[taskId].timerStartTime || null
+                    timerStartTime: tasks[taskId].timerStartTime || null,
+                    lastUpdated: tasks[taskId].lastUpdated
                 });
             } else {
                 saveAllTasks();
@@ -586,6 +676,7 @@
                     // Ensure all tasks have required properties
                     if (!acc[k].hasOwnProperty('timeSpent')) acc[k].timeSpent = 0;
                     if (!acc[k].hasOwnProperty('order')) acc[k].order = 0;
+                    if (!acc[k].hasOwnProperty('lastUpdated')) acc[k].lastUpdated = Date.now();
                     return acc; 
                 }, {});
                 
@@ -598,6 +689,9 @@
                 
                 renderTasks();
             });
+            
+            // Load lifetime total
+            loadLifetimeTotal();
         } else {
             // Load from localStorage
             const raw = localStorage.getItem('obs_todo_tasks');
@@ -607,8 +701,11 @@
             Object.keys(tasks).forEach(key => {
                 if (!tasks[key].hasOwnProperty('timeSpent')) tasks[key].timeSpent = 0;
                 if (!tasks[key].hasOwnProperty('order')) tasks[key].order = 0;
+                if (!tasks[key].hasOwnProperty('lastUpdated')) tasks[key].lastUpdated = Date.now();
             });
             
+            // Load lifetime total
+            loadLifetimeTotal();
             renderTasks();
         }
 
