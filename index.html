@@ -99,7 +99,45 @@
         .show-keywords-btn:hover{background-color:rgba(255,255,255,0.1);}
         .manage-keywords-btn{background-color:var(--primary);color:white;border:none;padding:8px 15px;border-radius:6px;cursor:pointer;margin-top:10px;font-size:0.9rem;}
         
-        @media (max-width:600px){.task-meta{flex-direction:column;gap:3px;align-items:flex-end}.task-time{font-size:.7rem}}
+        /* NEW STYLES FOR THE LAYOUT CHANGES */
+        .time-stats-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: rgba(255,255,255,.05);
+            border-radius: 8px;
+        }
+        .timers-section {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+        }
+        .progress-section {
+            width: 50%;
+        }
+        .progress-section .progress-container {
+            margin-top: 0;
+        }
+        .progress-section .progress-bar {
+            width: 100%;
+        }
+        
+        @media (max-width:600px){
+            .task-meta{flex-direction:column;gap:3px;align-items:flex-end}
+            .task-time{font-size:.7rem}
+            .time-stats-container {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .timers-section {
+                width: 100%;
+            }
+            .progress-section {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
@@ -114,14 +152,26 @@
                 <div class="tab" data-tab="completed">Completed Tasks</div>
             </div>
             
-            <div class="time-stats">
-                <div class="time-stat">
-                    <div class="time-stat-value" id="daily-total">00:00:00</div>
-                    <div class="time-stat-label">Today</div>
+            <!-- UPDATED LAYOUT: Timers and progress bar in the same line -->
+            <div class="time-stats-container">
+                <div class="timers-section">
+                    <div class="time-stat">
+                        <div class="time-stat-value" id="daily-total">00:00:00</div>
+                        <div class="time-stat-label">Today</div>
+                    </div>
+                    <div class="time-stat">
+                        <div class="time-stat-value" id="lifetime-total">00:00:00</div>
+                        <div class="time-stat-label">Lifetime</div>
+                    </div>
                 </div>
-                <div class="time-stat">
-                    <div class="time-stat-value" id="lifetime-total">00:00:00</div>
-                    <div class="time-stat-label">Lifetime</div>
+                <div class="progress-section">
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span>Today's Progress</span>
+                            <span id="progress-percent">0%</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+                    </div>
                 </div>
             </div>
             
@@ -131,13 +181,6 @@
                 <button class="new-task-button" id="add-task-btn">Add</button>
             </div>
             <button class="manage-keywords-btn" id="manage-keywords-btn">Manage Keywords</button>
-            <div class="progress-container">
-                <div class="progress-header">
-                    <span>Today's Progress</span>
-                    <span id="progress-percent">0%</span>
-                </div>
-                <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
-            </div>
             <div class="stats">
                 <span id="completed-count">0 of 0 completed today</span>
                 <span id="remaining-count">0 tasks remaining</span>
@@ -690,10 +733,6 @@
                 renderTasks();
             }
         }
-        
-        // =================================================================
-        //               *** CODE CHANGE IS IN THIS SECTION ***
-        // =================================================================
 
         // Render functions
         function renderTaskElement(taskId, task) {
@@ -724,9 +763,6 @@
             // Available keywords to add
             let availableKeywordsHTML = '';
             
-            // =================================================================
-            //               *** THIS IS THE MODIFIED BLOCK ***
-            // =================================================================
             // We change the loop to include 'index'
             keywords.forEach((keyword, index) => {
                 if (!task.keywords || !task.keywords.includes(keyword)) {
@@ -757,205 +793,6 @@
                     `;
                 }
             });
-            // =================================================================
-            //               *** END OF MODIFIED BLOCK ***
-            // =================================================================
-
-
-            // Add new keyword input
-            const keywordInputId = `keyword-input-${taskId}`;
-            const keywordInputHTML = `
-                <div class="keyword-input-container">
-                    <input type="text" class="keyword-input" id="${keywordInputId}" placeholder="Add new...">
-                    <button class="add-keyword-confirm" onclick="addNewKeyword('${taskId}', '${keywordInputId}')">+</button>
-                </div>
-            `;
-            
-            keywordsContainer.innerHTML = assignedKeywordsHTML + availableKeywordsHTML + keywordInputHTML;
-            
-            // Main task content
-            let taskContentHTML;
-            if (editingTaskId === taskId) {
-                // Editing view
-                taskContentHTML = `
-                    <input type="text" class="task-input" value="${escapeHtml(task.text)}">
-                    <div class="task-actions">
-                        <button class="action-btn" onclick="saveTaskEdit('${taskId}')">✔️</button>
-                        <button class="action-btn" onclick="cancelTaskEdit()">❌</button>
-                    </div>
-                `;
-            } else {
-                // Normal view
-                const isTimerRunning = !!timerIntervals[taskId];
-                taskContentHTML = `
-                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
-                    <div class="task-content">
-                        <span class="task-text">${escapeHtml(task.text)}</span>
-                        ${task.completed && task.completedAt ? `<span class="completion-date">Completed: ${formatDate(task.completedAt)}</span>` : ''}
-                    </div>
-                    <div class="task-meta">
-                        <div class="task-time" id="timer-${taskId}">${formatTime(task.timeSpent || 0)}</div>
-                        <div class="timer-controls">
-                            <button class="timer-btn ${isTimerRunning ? 'running' : ''}" onclick="startTimer('${taskId}')" ${task.completed || isTimerRunning ? 'disabled' : ''}>▶</button>
-                            <button class="timer-btn" onclick="pauseTimer('${taskId}')" ${task.completed || !isTimerRunning ? 'disabled' : ''}>❚❚</button>
-                            <button class="timer-btn" onclick="stopTimer('${taskId}')" ${task.completed ? 'disabled' : ''}>■</button>
-                        </div>
-                        <div class="task-actions">
-                            <button class="action-btn" onclick="startEditingTask('${taskId}')">✏️</button>
-                            <button class="action-btn" onclick="removeTask('${taskId}')">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            }
-            
-            taskItem.innerHTML = taskContentHTML;
-            
-            // Add keyword button and container (conditionally)
-            if (currentTab === 'active') {
-                const showKeywordsBtn = document.createElement('button');
-                showKeywordsBtn.className = 'show-keywords-btn';
-                showKeywordsBtn.innerHTML = '🏷️ Keywords';
-                showKeywordsBtn.onclick = () => {
-                    keywordsContainer.classList.toggle('visible');
-                };
-                
-                // Insert keyword elements after the task-content
-                const taskContentDiv = taskItem.querySelector('.task-content');
-                if (taskContentDiv) {
-                    taskContentDiv.insertAdjacentElement('afterend', showKeywordsBtn);
-                    showKeywordsBtn.insertAdjacentElement('afterend', keywordsContainer);
-                }
-            }
-
-            // Add drag events
-            if (currentTab === 'active') {
-                taskItem.addEventListener('dragstart', handleDragStart);
-                taskItem.addEventListener('dragenter', handleDragEnter);
-                taskItem.addEventListener('dragover', handleDragOver);
-                taskItem.addEventListener('dragleave', handleDragLeave);
-                taskItem.addEventListener('drop', handleDrop);
-                taskItem.addEventListener('dragend', handleDragEnd);
-            }
-
-            return taskItem;
-        }
-
-        function renderTasks() {
-            taskListEl.innerHTML = '';
-            
-            const taskEntries = Object.entries(tasks);
-            
-            // Filter tasks based on the current tab
-            const filteredTasks = taskEntries.filter(([id, task]) => {
-                if (currentTab === 'active') {
-                    return !task.completed;
-                } else {
-                    return task.completed && isToday(task.completedAt);
-                }
-            });
-
-            // Sort tasks
-            if (currentTab === 'active') {
-                // Sort by 'order' property
-                filteredTasks.sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
-            } else {
-                // Sort completed tasks by completion time, newest first
-                filteredTasks.sort(([, a], [, b]) => new Date(b.completedAt) - new Date(a.completedAt));
-            }
-            
-            if (filteredTasks.length === 0) {
-                const message = currentTab === 'active' ? 'No active tasks. Add one below!' : 'No tasks completed today.';
-                taskListEl.innerHTML = `<li class="empty-state">${message}</li>`;
-            } else {
-                filteredTasks.forEach(([id, task]) => {
-                    const taskItem = renderTaskElement(id, task);
-                    taskListEl.appendChild(taskItem);
-                });
-            }
-            
-            updateStats();
-            updateTimeStats();
-            timestampEl.textContent = `Updated: ${new Date().toLocaleString()}`;
-        }
-        
-        // (The rest of the script continues...)
-        // ...
-        
-    </script>
-    
-    <script>
-        // ... (All previous script content) ...
-        
-        // =================================================================
-        // *** THIS IS THE ONLY FUNCTION I'VE MODIFIED ***
-        // =================================================================
-        
-        // Render functions
-        function renderTaskElement(taskId, task) {
-            const taskItem = document.createElement('li');
-            taskItem.className = 'task-item';
-            taskItem.dataset.id = taskId;
-            taskItem.draggable = currentTab === 'active';
-            
-            if (task.completed) {
-                taskItem.classList.add('completed');
-            }
-
-            // Keyword related elements
-            const keywordsContainer = document.createElement('div');
-            keywordsContainer.className = 'keywords-container';
-            keywordsContainer.id = `keywords-${taskId}`;
-            
-            let assignedKeywordsHTML = '';
-            if (task.keywords && task.keywords.length > 0) {
-                assignedKeywordsHTML = task.keywords.map(k => `
-                    <span class="keyword-tag selected">
-                        ${escapeHtml(k)}
-                        <button class="keyword-remove" onclick="removeKeywordFromTask('${taskId}', '${escapeHtml(k)}')">&times;</button>
-                    </span>
-                `).join('');
-            }
-            
-            // Available keywords to add
-            let availableKeywordsHTML = '';
-            
-            // =================================================================
-            //               *** THIS IS THE MODIFIED BLOCK ***
-            // =================================================================
-            // We change the loop to include 'index'
-            keywords.forEach((keyword, index) => {
-                if (!task.keywords || !task.keywords.includes(keyword)) {
-                    // We build a container with all 3 buttons
-                    availableKeywordsHTML += `
-                        <div class="keyword-tag" style="display:inline-flex; align-items:center; padding: 0; background-color: #4a505c;">
-                            
-                            <span style="padding: 2px 8px; cursor:pointer;" 
-                                  title="Add '${escapeHtml(keyword)}' to task"
-                                  onclick="toggleKeyword('${taskId}', '${escapeHtml(keyword)}')">
-                                + ${escapeHtml(keyword)}
-                            </span>
-                            
-                            <button class="keyword-item-btn" 
-                                    title="Rename '${escapeHtml(keyword)}' globally"
-                                    style="color: var(--text); padding: 2px 4px; font-size: 0.7rem;" 
-                                    onclick="event.stopPropagation(); startEditingKeyword(${index}); showKeywordManagement();">
-                                ✏️
-                            </button>
-                            
-                            <button class="keyword-item-btn" 
-                                    title="Remove '${escapeHtml(keyword)}' globally"
-                                    style="color: var(--text); padding: 2px 4px; font-size: 0.7rem;" 
-                                    onclick="event.stopPropagation(); removeKeyword(${index});">
-                                🗑️
-                            </button>
-                        </div>
-                    `;
-                }
-            });
-            // =================================================================
-            //               *** END OF MODIFIED BLOCK ***
-            // =================================================================
-
 
             // Add new keyword input
             const keywordInputId = `keyword-input-${taskId}`;
