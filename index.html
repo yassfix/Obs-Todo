@@ -9,8 +9,8 @@
             --primary: #6c5ce7;
             --primary-light: #a29bfe;
             --secondary: #00b894;
-            --background: #2d3436;
-            --card: #353b48;
+            --background: #000000;
+            --card: #000000ec;
             --text: #dfe6e9;
             --accent: #fd79a8;
             --warning: #fdcb6e;
@@ -22,7 +22,7 @@
         .header{text-align:center;margin-bottom:5px}
         .header h1{color:var(--primary);font-size:1.8rem;margin-bottom:3px}
         .header p{color:var(--primary-light);font-size:0.95rem}
-        .focus-section{background-color:var(--card);border-radius:10px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.2)}
+        .focus-section{background-color:var(--card);border-radius:10px;padding:20px;box-shadow:0 4px 15px rgba(0,0,0,.2);position:relative;overflow:hidden;}
         .section-header{display:flex;align-items:center;margin-bottom:15px;padding-bottom:10px;border-bottom:2px solid var(--primary)}
         .section-header h2{font-size:1.4rem;margin-left:10px}
         .tabs-container{display:flex;border-bottom:2px solid var(--primary);margin-bottom:15px}
@@ -30,12 +30,12 @@
         .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:bold}
         .tab:hover:not(.active){background-color:rgba(255,255,255,0.05)}
         .icon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;color:white;font-weight:bold;background-color:var(--accent)}
-        .task-list{list-style-type:none;margin-bottom:20px}
+        .task-list{list-style-type:none;margin-bottom:20px;position:relative;}
         .task-item{display:flex;align-items:center;padding:12px 10px;margin-bottom:8px;background-color:rgba(255,255,255,.05);border-radius:8px;transition:all .3s;cursor:grab;}
         .task-item:hover{background-color:rgba(255,255,255,.1)}
         .task-item.dragging{opacity:0.5;background-color:rgba(255,255,255,.2);cursor:grabbing;}
         .task-checkbox{margin-right:12px;width:18px;height:18px;accent-color:var(--secondary);cursor:pointer}
-        .task-text{flex-grow:1;font-size:1rem;margin-right:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .task-text{flex-grow:1;font-size:1rem;margin-right:15px;word-wrap:break-word;overflow-wrap:break-word;white-space:normal}
         .task-input{flex-grow:1;padding:5px;border:none;border-radius:4px;background-color:rgba(255,255,255,.1);color:var(--text);font-size:1rem;margin-right:15px}
         .task-meta{display:flex;gap:10px;align-items:center;flex-shrink:0}
         .task-time{font-size:.8rem;color:var(--primary-light);white-space:nowrap;min-width: 70px;text-align: center;}
@@ -64,7 +64,7 @@
         .action-btn{background:none;border:none;color:var(--primary-light);cursor:pointer;font-size:0.8rem;padding:2px 5px;border-radius:3px;display:flex;align-items:center;justify-content:center;}
         .action-btn:hover{background-color:rgba(255,255,255,0.1);}
         .completion-date{font-size:0.7rem;color:var(--primary-light);margin-top:2px;font-style:italic;}
-        .task-content{flex-grow:1;display:flex;flex-direction:column;margin-right:15px;overflow:hidden;}
+        .task-content{flex-grow:1;display:flex;flex-direction:column;margin-right:15px;overflow:hidden;min-width:0} /* Added min-width:0 for proper flexbox wrapping */
         
         /* Keyword/Tag Styles - UPDATED */
         .keywords-container{display:none;flex-wrap:wrap;gap:5px;margin-bottom:8px;align-items:center;}
@@ -108,6 +108,8 @@
             padding: 10px;
             background-color: rgba(255,255,255,.05);
             border-radius: 8px;
+            position: relative;
+            z-index: 2;
         }
         .timers-section {
             display: flex;
@@ -124,6 +126,127 @@
             width: 100%;
         }
         
+        /* NEW STYLES FOR DROPDOWN FUNCTIONALITY */
+        .task-main-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        .dropdown-btn {
+            background: none;
+            border: none;
+            color: var(--primary-light);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 2px 5px;
+            border-radius: 3px;
+            margin-left: 5px;
+            transition: transform 0.3s;
+        }
+        .dropdown-btn:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .dropdown-btn.rotated {
+            transform: rotate(180deg);
+        }
+        .task-details {
+            display: none;
+            width: 100%;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            margin-top: 8px;
+        }
+        .task-details.visible {
+            display: flex;
+            flex-direction: column;
+        }
+        .task-details-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        /* DISPLAY MODE SECTION */
+        .display-mode-section {
+            background-color: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,.2);
+            margin-top: 20px;
+        }
+
+        .display-mode-section h3 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .mode-selector {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .mode-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .mode-option input[type="radio"] {
+            margin-right: 8px;
+            accent-color: var(--primary);
+        }
+
+        .mode-option label {
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .mode-description {
+            font-size: 0.85rem;
+            color: var(--primary-light);
+            padding: 10px;
+            background-color: rgba(255,255,255,.05);
+            border-radius: 6px;
+        }
+
+        /* CONVEYOR BELT ANIMATION STYLES */
+        .conveyor-container {
+            position: relative;
+            overflow: hidden;
+            height: auto;
+            min-height: 100px;
+        }
+
+        .conveyor-track {
+            position: relative;
+            transition: transform 0.1s linear;
+        }
+
+        .conveyor-task {
+            transition: opacity 0.5s ease;
+            margin-bottom: 8px;
+        }
+
+        .task-entering {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .task-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .task-exiting {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        /* For mobile responsiveness */
         @media (max-width:600px){
             .task-meta{flex-direction:column;gap:3px;align-items:flex-end}
             .task-time{font-size:.7rem}
@@ -137,14 +260,37 @@
             .progress-section {
                 width: 100%;
             }
+            .task-details-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+            .mode-selector {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+                /* Add to CSS section for smooth bottom entrance */
+        .conveyor-reset {
+            animation: slideFromBottom 0.5s ease-out;
+        }
+
+        @keyframes slideFromBottom {
+            0% {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
     <div class="dashboard">
         <div class="header">
-            <h1>Enhanced Task Dashboard</h1>
-            <p>Drag tasks to reorder • Timers track your time spent • Progress shows today's completion</p>
+            <h1>Obs Todo</h1>
         </div>
         <div class="focus-section">
             <div class="tabs-container">
@@ -175,7 +321,11 @@
                 </div>
             </div>
             
-            <ul class="task-list" id="task-list"></ul>
+            <div class="conveyor-container" id="conveyor-container">
+                <div class="conveyor-track" id="conveyor-track">
+                    <ul class="task-list" id="task-list"></ul>
+                </div>
+            </div>
             <div class="new-task">
                 <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
                 <button class="new-task-button" id="add-task-btn">Add</button>
@@ -184,6 +334,32 @@
             <div class="stats">
                 <span id="completed-count">0 of 0 completed today</span>
                 <span id="remaining-count">0 tasks remaining</span>
+            </div>
+            
+            <!-- Display Mode Section -->
+            <div class="display-mode-section">
+                <h3>Display Mode</h3>
+                <div class="mode-selector">
+                    <div class="mode-option">
+                        <input type="radio" id="mode-static" name="display-mode" value="static" >
+                        <label for="mode-static">Static Todo List</label>
+                    </div>
+                    <div class="mode-option">
+                        <input type="radio" id="mode-loop-incompleted" name="display-mode" value="loop-incompleted" checked>
+                        <label for="mode-loop-incompleted">Loop Incompleted Tasks</label>
+                    </div>
+                    <div class="mode-option">
+                        <input type="radio" id="mode-loop-all" name="display-mode" value="loop-all">
+                        <label for="mode-loop-all">Loop All Tasks</label>
+                    </div>
+                    <div class="mode-option">
+                        <input type="radio" id="mode-rotate-incompleted" name="display-mode" value="rotate-incompleted">
+                        <label for="mode-rotate-incompleted">Rotate Incompleted Tasks (Keep Top)</label>
+                    </div>
+                </div>
+                <div class="mode-description" id="mode-description">
+                    Current tasks are displayed in a static list.
+                </div>
             </div>
         </div>
         <div class="footer">
@@ -233,6 +409,8 @@
 
         // DOM elements
         const taskListEl = document.getElementById('task-list');
+        const conveyorContainer = document.getElementById('conveyor-container');
+        const conveyorTrack = document.getElementById('conveyor-track');
         const inputEl = document.getElementById('new-task-input');
         const addBtn = document.getElementById('add-task-btn');
         const progressFill = document.getElementById('progress-fill');
@@ -257,8 +435,16 @@
         let timerIntervals = {};
         let dragSrcEl = null;
         let editingTaskId = null;
-        let lifetimeTotalSeconds = 0;
         let editingKeywordIndex = null;
+        let expandedTasks = {}; // Track which tasks are expanded
+
+        // Display mode variables
+        let displayMode = 'static';
+        let conveyorInterval = null;
+        let conveyorTasks = [];
+        let conveyorPosition = 0;
+        let isConveyorPaused = false;
+        let conveyorSpeed = 50; // pixels per second
 
         // Default keywords
         let keywords = ['Work', 'Personal', 'Urgent', 'Important', 'Shopping'];
@@ -309,10 +495,6 @@
                 task.timeSpent = (task.timeSpent || 0) + elapsed;
                 task.timerStartTime = Date.now();
                 
-                // Update lifetime total
-                lifetimeTotalSeconds += elapsed;
-                saveLifetimeTotal();
-                
                 updateTaskInStorage(taskId);
                 updateTaskDisplay(taskId);
                 updateTimeStats();
@@ -332,10 +514,6 @@
                     const elapsed = Math.floor((Date.now() - task.timerStartTime) / 1000);
                     task.timeSpent = (task.timeSpent || 0) + elapsed;
                     task.timerStartTime = null;
-                    
-                    // Update lifetime total
-                    lifetimeTotalSeconds += elapsed;
-                    saveLifetimeTotal();
                 }
                 
                 updateTaskInStorage(taskId);
@@ -377,31 +555,23 @@
             return totalSeconds;
         }
 
+        function calculateLifetimeTotal() {
+            let totalSeconds = 0;
+            
+            Object.values(tasks).forEach(task => {
+                if (task.completed) {
+                    totalSeconds += task.timeSpent || 0;
+                }
+            });
+            
+            return totalSeconds;
+        }
+
         function updateTimeStats() {
             const dailyTotalSeconds = calculateDailyTotal();
+            const lifetimeTotalSeconds = calculateLifetimeTotal();
             dailyTotalEl.textContent = formatTime(dailyTotalSeconds);
             lifetimeTotalEl.textContent = formatTime(lifetimeTotalSeconds);
-        }
-
-        function loadLifetimeTotal() {
-            if (useFirebase) {
-                firebase.database().ref('lifetimeTotal').once('value').then(snap => {
-                    lifetimeTotalSeconds = snap.val() || 0;
-                    updateTimeStats();
-                });
-            } else {
-                const stored = localStorage.getItem('obs_todo_lifetime_total');
-                lifetimeTotalSeconds = stored ? parseInt(stored) : 0;
-                updateTimeStats();
-            }
-        }
-
-        function saveLifetimeTotal() {
-            if (useFirebase) {
-                firebase.database().ref('lifetimeTotal').set(lifetimeTotalSeconds);
-            } else {
-                localStorage.setItem('obs_todo_lifetime_total', lifetimeTotalSeconds.toString());
-            }
         }
 
         // Drag and drop functions
@@ -734,17 +904,25 @@
             }
         }
 
+        // Toggle task details visibility
+        function toggleTaskDetails(taskId) {
+            expandedTasks[taskId] = !expandedTasks[taskId];
+            renderTasks();
+        }
+
         // Render functions
         function renderTaskElement(taskId, task) {
             const taskItem = document.createElement('li');
-            taskItem.className = 'task-item';
+            taskItem.className = 'task-item conveyor-task';
             taskItem.dataset.id = taskId;
-            taskItem.draggable = currentTab === 'active';
+            taskItem.draggable = currentTab === 'active' && displayMode === 'static';
             
             if (task.completed) {
                 taskItem.classList.add('completed');
             }
 
+            const isExpanded = expandedTasks[taskId];
+            
             // Keyword related elements
             const keywordsContainer = document.createElement('div');
             keywordsContainer.className = 'keywords-container';
@@ -810,31 +988,44 @@
             if (editingTaskId === taskId) {
                 // Editing view
                 taskContentHTML = `
-                    <input type="text" class="task-input" value="${escapeHtml(task.text)}">
-                    <div class="task-actions">
-                        <button class="action-btn" onclick="saveTaskEdit('${taskId}')">✔️</button>
-                        <button class="action-btn" onclick="cancelTaskEdit()">❌</button>
+                    <div class="task-main-content">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
+                        <input type="text" class="task-input" value="${escapeHtml(task.text)}">
+                        <div class="task-actions">
+                            <button class="action-btn" onclick="saveTaskEdit('${taskId}')">✔️</button>
+                            <button class="action-btn" onclick="cancelTaskEdit()">❌</button>
+                        </div>
                     </div>
                 `;
             } else {
                 // Normal view
                 const isTimerRunning = !!timerIntervals[taskId];
                 taskContentHTML = `
-                    <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
-                    <div class="task-content">
-                        <span class="task-text">${escapeHtml(task.text)}</span>
-                        ${task.completed && task.completedAt ? `<span class="completion-date">Completed: ${formatDate(task.completedAt)}</span>` : ''}
-                    </div>
-                    <div class="task-meta">
-                        <div class="task-time" id="timer-${taskId}">${formatTime(task.timeSpent || 0)}</div>
-                        <div class="timer-controls">
-                            <button class="timer-btn ${isTimerRunning ? 'running' : ''}" onclick="startTimer('${taskId}')" ${task.completed || isTimerRunning ? 'disabled' : ''}>▶</button>
-                            <button class="timer-btn" onclick="pauseTimer('${taskId}')" ${task.completed || !isTimerRunning ? 'disabled' : ''}>❚❚</button>
-                            <button class="timer-btn" onclick="stopTimer('${taskId}')" ${task.completed ? 'disabled' : ''}>■</button>
+                    <div class="task-main-content">
+                        <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
+                        <div class="task-content">
+                            <span class="task-text">${escapeHtml(task.text)}</span>
+                            ${task.completed && task.completedAt ? `<span class="completion-date">Completed: ${formatDate(task.completedAt)}</span>` : ''}
                         </div>
-                        <div class="task-actions">
-                            <button class="action-btn" onclick="startEditingTask('${taskId}')">✏️</button>
-                            <button class="action-btn" onclick="removeTask('${taskId}')">🗑️</button>
+                        <button class="dropdown-btn ${isExpanded ? 'rotated' : ''}" onclick="toggleTaskDetails('${taskId}')">▼</button>
+                    </div>
+                    <div class="task-details ${isExpanded ? 'visible' : ''}">
+                        <div class="task-details-row">
+                            <div class="task-time" id="timer-${taskId}">${formatTime(task.timeSpent || 0)}</div>
+                            <div class="timer-controls">
+                                <button class="timer-btn ${isTimerRunning ? 'running' : ''}" onclick="startTimer('${taskId}')" ${task.completed || isTimerRunning ? 'disabled' : ''}>▶</button>
+                                <button class="timer-btn" onclick="pauseTimer('${taskId}')" ${task.completed || !isTimerRunning ? 'disabled' : ''}>❚❚</button>
+                                <button class="timer-btn" onclick="stopTimer('${taskId}')" ${task.completed ? 'disabled' : ''}>■</button>
+                            </div>
+                        </div>
+                        <div class="task-details-row">
+                            <div class="task-actions">
+                                <button class="action-btn" onclick="startEditingTask('${taskId}')">✏️ Edit</button>
+                                <button class="action-btn" onclick="removeTask('${taskId}')">🗑️ Delete</button>
+                            </div>
+                        </div>
+                        <div class="keywords-container ${isExpanded ? 'visible' : ''}">
+                            ${assignedKeywordsHTML + availableKeywordsHTML + keywordInputHTML}
                         </div>
                     </div>
                 `;
@@ -842,25 +1033,8 @@
             
             taskItem.innerHTML = taskContentHTML;
             
-            // Add keyword button and container (conditionally)
-            if (currentTab === 'active') {
-                const showKeywordsBtn = document.createElement('button');
-                showKeywordsBtn.className = 'show-keywords-btn';
-                showKeywordsBtn.innerHTML = '🏷️ Keywords';
-                showKeywordsBtn.onclick = () => {
-                    keywordsContainer.classList.toggle('visible');
-                };
-                
-                // Insert keyword elements after the task-content
-                const taskContentDiv = taskItem.querySelector('.task-content');
-                if (taskContentDiv) {
-                    taskContentDiv.insertAdjacentElement('afterend', showKeywordsBtn);
-                    showKeywordsBtn.insertAdjacentElement('afterend', keywordsContainer);
-                }
-            }
-
-            // Add drag events
-            if (currentTab === 'active') {
+            // Add drag events only in static mode
+            if (currentTab === 'active' && displayMode === 'static') {
                 taskItem.addEventListener('dragstart', handleDragStart);
                 taskItem.addEventListener('dragenter', handleDragEnter);
                 taskItem.addEventListener('dragover', handleDragOver);
@@ -908,6 +1082,11 @@
             updateStats();
             updateTimeStats();
             timestampEl.textContent = `Updated: ${new Date().toLocaleString()}`;
+            
+            // Initialize conveyor if needed
+            if (displayMode !== 'static' && currentTab === 'active') {
+                initConveyor();
+            }
         }
 
         function updateTaskDisplay(taskId) {
@@ -921,31 +1100,37 @@
                 
                 // Update timer button states
                 const isTimerRunning = !!timerIntervals[taskId];
-                taskItem.querySelector('.timer-btn:nth-child(1)').disabled = task.completed || isTimerRunning;
-                taskItem.querySelector('.timer-btn:nth-child(2)').disabled = task.completed || !isTimerRunning;
-                taskItem.querySelector('.timer-btn:nth-child(3)').disabled = task.completed;
-                taskItem.querySelector('.timer-btn:nth-child(1)').classList.toggle('running', isTimerRunning);
+                const timerBtns = taskItem.querySelectorAll('.timer-btn');
+                if (timerBtns.length > 0) {
+                    timerBtns[0].disabled = task.completed || isTimerRunning;
+                    timerBtns[1].disabled = task.completed || !isTimerRunning;
+                    timerBtns[2].disabled = task.completed;
+                    timerBtns[0].classList.toggle('running', isTimerRunning);
+                }
             }
         }
         
         function updateStats() {
             const allTasks = Object.values(tasks);
             const activeTasks = allTasks.filter(task => !task.completed);
-            const todayTasks = allTasks.filter(task => isToday(task.createdAt) || (task.completed && isToday(task.completedAt)));
-            const completedToday = todayTasks.filter(task => task.completed);
-
-            const totalToday = todayTasks.length;
-            const completedCountToday = completedToday.length;
+            const completedTasks = allTasks.filter(task => task.completed && isToday(task.completedAt));
+            
+            // Count ALL incomplete tasks (not just today's) and today's completed tasks
+            const totalIncomplete = activeTasks.length;
+            const completedToday = completedTasks.length;
+            
+            // Progress = completed today / (completed today + total incomplete)
+            const totalRelevant = completedToday + totalIncomplete;
             
             let percent = 0;
-            if (totalToday > 0) {
-                percent = Math.round((completedCountToday / totalToday) * 100);
+            if (totalRelevant > 0) {
+                percent = Math.round((completedToday / totalRelevant) * 100);
             }
             
             progressFill.style.width = `${percent}%`;
             progressPercent.textContent = `${percent}%`;
-            completedCount.textContent = `${completedCountToday} of ${totalToday} completed today`;
-            remainingCount.textContent = `${activeTasks.length} tasks remaining`;
+            completedCount.textContent = `${completedToday} completed today`;
+            remainingCount.textContent = `${totalIncomplete} tasks remaining`;
         }
         
         function escapeHtml(str) {
@@ -1028,12 +1213,256 @@
                 dbRef.on('value', snap => {
                     tasks = snap.val() || {};
                     renderTasks();
+                    initializeDisplayMode(); // Add this line
                 });
             } else {
                 const storedTasks = localStorage.getItem('obs_todo_tasks');
                 tasks = storedTasks ? JSON.parse(storedTasks) : {};
                 renderTasks();
+                initializeDisplayMode(); // Add this line
             }
+        }
+
+        // Display Mode Functions - CONVEYOR BELT IMPLEMENTATION
+        function handleDisplayModeChange() {
+            const selectedMode = document.querySelector('input[name="display-mode"]:checked').value;
+            displayMode = selectedMode;
+            
+            // Update mode description
+            updateModeDescription();
+            
+            // Stop any existing conveyor
+            stopConveyor();
+            
+            // Clear any existing intervals
+            if (conveyorInterval) {
+                clearInterval(conveyorInterval);
+                conveyorInterval = null;
+            }
+            
+            // Reset conveyor state
+            conveyorTasks = [];
+            conveyorPosition = 0;
+            isConveyorPaused = false;
+            
+            // Apply the selected mode
+            if (displayMode !== 'static' && currentTab === 'active') {
+                initConveyor();
+            } else {
+                // Reset to normal rendering for static mode
+                conveyorContainer.classList.remove('conveyor-container');
+                conveyorTrack.style.transform = 'translateY(0)';
+                renderTasks();
+            }
+        }
+
+        function updateModeDescription() {
+            const descriptionEl = document.getElementById('mode-description');
+            let description = '';
+            
+            switch(displayMode) {
+                case 'static':
+                    description = 'Current tasks are displayed in a static list.';
+                    break;
+                case 'loop-incompleted':
+                    description = 'Incompleted tasks will continuously move from bottom to top like a conveyor belt.';
+                    break;
+                case 'loop-all':
+                    description = 'All tasks (including completed) will continuously move from bottom to top like a conveyor belt.';
+                    break;
+                case 'rotate-incompleted':
+                    description = 'Incompleted tasks (except the top one) will rotate positions periodically.';
+                    break;
+            }
+            
+            descriptionEl.textContent = description;
+        }
+
+        function initConveyor() {
+            // Clear any existing interval
+            if (conveyorInterval) {
+                clearInterval(conveyorInterval);
+                conveyorInterval = null;
+            }
+            
+            // Get tasks for conveyor based on mode
+            conveyorTasks = Object.entries(tasks)
+                .filter(([id, task]) => {
+                    if (displayMode === 'loop-incompleted' || displayMode === 'rotate-incompleted') {
+                        return !task.completed;
+                    } else if (displayMode === 'loop-all') {
+                        return true; // All tasks
+                    }
+                    return false;
+                })
+                .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+            
+            if (conveyorTasks.length === 0) {
+                // No tasks to display in conveyor mode
+                renderTasks();
+                return;
+            }
+            
+            conveyorPosition = 0;
+            isConveyorPaused = false;
+            
+            // Reset container to conveyor mode
+            conveyorContainer.classList.add('conveyor-container');
+            conveyorTrack.style.transform = 'translateY(0)';
+            
+            // Render initial conveyor tasks
+            renderConveyorTasks();
+            
+            // Start conveyor animation
+            startConveyor();
+        }
+
+        function startConveyor() {
+            if (conveyorInterval) clearInterval(conveyorInterval);
+            
+            // Set up conveyor animation (60fps for smooth movement)
+            conveyorInterval = setInterval(() => {
+                if (!isConveyorPaused) {
+                    moveConveyor();
+                }
+            }, 16); // ~60fps
+        }
+
+        function stopConveyor() {
+            if (conveyorInterval) {
+                clearInterval(conveyorInterval);
+                conveyorInterval = null;
+            }
+            
+            // Reset container to normal rendering
+            taskListEl.innerHTML = '';
+            conveyorContainer.classList.remove('conveyor-container');
+            conveyorTrack.style.transform = 'translateY(0)';
+        }
+
+        function renderConveyorTasks() {
+            taskListEl.innerHTML = '';
+            conveyorContainer.classList.add('conveyor-container');
+            
+            if (conveyorTasks.length === 0) {
+                taskListEl.innerHTML = `<li class="empty-state">No tasks to display.</li>`;
+                return;
+            }
+            
+            // Create all tasks for the conveyor
+            conveyorTasks.forEach(([taskId, task]) => {
+                const taskItem = renderTaskElement(taskId, task);
+                taskListEl.appendChild(taskItem);
+            });
+            
+            // For rotate-incompleted mode, keep the first task fixed
+            if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 1) {
+                const firstTask = taskListEl.querySelector('.task-item:first-child');
+                if (firstTask) {
+                    firstTask.style.position = 'sticky';
+                    firstTask.style.top = '0';
+                    firstTask.style.zIndex = '10';
+                    firstTask.style.backgroundColor = 'rgba(255,255,255,.08)';
+                }
+            }
+        }
+
+        
+        function moveConveyor() {
+            if (conveyorTasks.length === 0) return;
+
+            const movement = conveyorSpeed / 60; // pixels per frame
+            conveyorPosition -= movement;
+
+            const trackHeight = conveyorTrack.scrollHeight;
+            const containerHeight = conveyorContainer.clientHeight;
+
+            // When list scrolls past top, reset to bottom — but hide the reset visually
+            if (Math.abs(conveyorPosition) >=  containerHeight) {
+                // Hide the track before resetting (so the jump isn’t seen)
+                conveyorTrack.style.opacity = '0';
+                conveyorTrack.style.transition = 'none'; // disable smooth transition during reset
+
+                // Reset position instantly
+                conveyorPosition = containerHeight;
+                conveyorTrack.style.transform = `translateY(${conveyorPosition}px)`;
+
+                // Force reflow (ensures browser applies these immediately)
+                void conveyorTrack.offsetHeight;
+
+                // Show the track again after a tiny delay
+                setTimeout(() => {
+                conveyorTrack.style.transition = ''; // restore normal transition (if any)
+                conveyorTrack.style.opacity = '1';
+                }, 50);
+            } else {
+                // Normal movement
+                conveyorTrack.style.transform = `translateY(${conveyorPosition}px)`;
+            }
+
+            // Rotate mode logic (unchanged)
+            if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 1) {
+                handleRotateIncompleted();
+            }
+        }
+
+        function handleRotateIncompleted() {
+            // For rotate-incompleted mode, we periodically rotate the tasks (except the first one)
+            // Check if it's time to rotate (every 5 seconds)
+            const now = Date.now();
+            if (!window.lastRotateTime) window.lastRotateTime = now;
+            
+            if (now - window.lastRotateTime > 5000) { // 5 seconds
+                window.lastRotateTime = now;
+                
+                // Get incomplete tasks except the first one
+                const incompleteTasks = Object.entries(tasks)
+                    .filter(([id, task]) => !task.completed)
+                    .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+                
+                if (incompleteTasks.length <= 2) return;
+                
+                // Keep the first task fixed, rotate the rest
+                const fixedTask = incompleteTasks[0];
+                const tasksToRotate = incompleteTasks.slice(1);
+                
+                // Rotate the tasks (move first to end)
+                const rotatedTasks = [...tasksToRotate.slice(1), tasksToRotate[0]];
+                
+                // Update the order
+                let order = 1; // Start from 1 because 0 is the fixed task
+                rotatedTasks.forEach(([id, task]) => {
+                    tasks[id].order = order++;
+                });
+                
+                // Save and re-render
+                saveAllTasks();
+                renderTasks();
+            }
+        }
+
+        function pauseConveyor() {
+            isConveyorPaused = true;
+        }
+
+        function resumeConveyor() {
+            isConveyorPaused = false;
+        }
+
+        // Initialize display mode on page load
+        function initializeDisplayMode() {
+            displayMode = 'loop-incompleted';
+            document.getElementById('mode-loop-incompleted').checked = true;
+            
+            // Stop any existing conveyor
+            stopConveyor();
+            
+            // Initialize conveyor for the default mode
+            if (currentTab === 'active') {
+                initConveyor();
+            }
+            
+            updateModeDescription();
         }
 
         // Event listeners
@@ -1050,6 +1479,14 @@
                 tab.classList.add('active');
                 currentTab = tab.dataset.tab;
                 editingTaskId = null; // Cancel editing when switching tabs
+                
+                // Stop conveyor if switching to completed tab
+                if (currentTab === 'completed') {
+                    stopConveyor();
+                } else if (displayMode !== 'static') {
+                    initConveyor();
+                }
+                
                 renderTasks();
             });
         });
@@ -1072,10 +1509,39 @@
                 addNewKeywordBtn.click();
             }
         });
+        
+        // Display mode listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const modeRadios = document.querySelectorAll('input[name="display-mode"]');
+            modeRadios.forEach(radio => {
+                radio.addEventListener('change', handleDisplayModeChange);
+            });
+            
+            // Set the initial display mode and trigger the change
+            displayMode = 'loop-incompleted';
+            document.getElementById('mode-loop-incompleted').checked = true;
+            handleDisplayModeChange();
+            
+            // Initialize mode description
+            updateModeDescription();
+        });
+
+        // Pause conveyor when interacting with tasks
+        document.addEventListener('mouseenter', function(e) {
+            if (e.target.closest('.task-item') && displayMode !== 'static') {
+                pauseConveyor();
+            }
+        });
+
+        document.addEventListener('mouseleave', function(e) {
+            if (e.target.closest('.task-item') && displayMode !== 'static') {
+                // Small delay before resuming
+                setTimeout(resumeConveyor, 1000);
+            }
+        });
 
         // Initial load
         loadKeywords();
-        loadLifetimeTotal();
         loadTasks();
     </script>
 </body>
