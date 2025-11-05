@@ -246,6 +246,35 @@
             transform: translateY(-20px);
         }
 
+        /* NEW STYLES FOR LIMITED VISIBLE AREA AND SCROLLING */
+        .tasks-container {
+            max-height: 272px; /* 4 tasks * 68px (approx task height with margin) */
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-light) rgba(255,255,255,0.1);
+            margin-bottom: 15px;
+            border-radius: 8px;
+            padding-right: 5px;
+        }
+
+        .tasks-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .tasks-container::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+
+        .tasks-container::-webkit-scrollbar-thumb {
+            background-color: var(--primary-light);
+            border-radius: 4px;
+        }
+
+        .tasks-container::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary);
+        }
+
         /* For mobile responsiveness */
         @media (max-width:600px){
             .task-meta{flex-direction:column;gap:3px;align-items:flex-end}
@@ -270,7 +299,7 @@
                 gap: 10px;
             }
         }
-                /* Add to CSS section for smooth bottom entrance */
+        /* Add to CSS section for smooth bottom entrance */
         .conveyor-reset {
             animation: slideFromBottom 0.5s ease-out;
         }
@@ -298,7 +327,6 @@
                 <div class="tab" data-tab="completed">Completed Tasks</div>
             </div>
             
-            <!-- UPDATED LAYOUT: Timers and progress bar in the same line -->
             <div class="time-stats-container">
                 <div class="timers-section">
                     <div class="time-stat">
@@ -321,9 +349,11 @@
                 </div>
             </div>
             
-            <div class="conveyor-container" id="conveyor-container">
-                <div class="conveyor-track" id="conveyor-track">
-                    <ul class="task-list" id="task-list"></ul>
+            <div class="tasks-container" id="tasks-container">
+                <div class="conveyor-container" id="conveyor-container">
+                    <div class="conveyor-track" id="conveyor-track">
+                        <ul class="task-list" id="task-list"></ul>
+                    </div>
                 </div>
             </div>
             <div class="new-task">
@@ -336,7 +366,6 @@
                 <span id="remaining-count">0 tasks remaining</span>
             </div>
             
-            <!-- Display Mode Section -->
             <div class="display-mode-section">
                 <h3>Display Mode</h3>
                 <div class="mode-selector">
@@ -409,6 +438,7 @@
 
         // DOM elements
         const taskListEl = document.getElementById('task-list');
+        const tasksContainer = document.getElementById('tasks-container');
         const conveyorContainer = document.getElementById('conveyor-container');
         const conveyorTrack = document.getElementById('conveyor-track');
         const inputEl = document.getElementById('new-task-input');
@@ -458,6 +488,14 @@
                    checkDate.getFullYear() === today.getFullYear();
         }
 
+        // ADDED: Function to trigger OBS refresh
+        function triggerObsRefresh() {
+            // This is a common technique to force OBS Browser Source to refresh
+            // by appending a changing hash to the URL without navigating away.
+            const now = new Date().getTime();
+            window.location.hash = `refresh=${now}`;
+        }
+        
         // Format date for display
         function formatDate(date) {
             const d = new Date(date);
@@ -785,6 +823,39 @@
                 if (stored) {
                     keywords = JSON.parse(stored);
                 }
+            }
+        }
+
+        // Display Mode Storage Functions
+        function saveDisplayMode() {
+            if (useFirebase) {
+                firebase.database().ref('displayMode').set(displayMode);
+            } else {
+                localStorage.setItem('obs_todo_displayMode', displayMode);
+            }
+        }
+
+        function loadDisplayMode(callback) {
+            if (useFirebase) {
+                firebase.database().ref('displayMode').once('value').then(snap => {
+                    const storedMode = snap.val();
+                    if (storedMode) {
+                        displayMode = storedMode;
+                        // Update the radio button
+                        document.getElementById(`mode-${displayMode}`).checked = true;
+                        updateModeDescription();
+                    }
+                    if (callback) callback();
+                });
+            } else {
+                const storedMode = localStorage.getItem('obs_todo_displayMode');
+                if (storedMode) {
+                    displayMode = storedMode;
+                    // Update the radio button
+                    document.getElementById(`mode-${displayMode}`).checked = true;
+                    updateModeDescription();
+                }
+                if (callback) callback();
             }
         }
 
@@ -1212,14 +1283,18 @@
                 dbRef = firebase.database().ref('tasks');
                 dbRef.on('value', snap => {
                     tasks = snap.val() || {};
-                    renderTasks();
-                    initializeDisplayMode(); // Add this line
+                    // Load display mode first, then render tasks
+                    loadDisplayMode(() => {
+                        renderTasks();
+                    });
                 });
             } else {
                 const storedTasks = localStorage.getItem('obs_todo_tasks');
                 tasks = storedTasks ? JSON.parse(storedTasks) : {};
-                renderTasks();
-                initializeDisplayMode(); // Add this line
+                // Load display mode first, then render tasks
+                loadDisplayMode(() => {
+                    renderTasks();
+                });
             }
         }
 
@@ -1227,6 +1302,9 @@
         function handleDisplayModeChange() {
             const selectedMode = document.querySelector('input[name="display-mode"]:checked').value;
             displayMode = selectedMode;
+            
+            // Save the display mode
+            saveDisplayMode();
             
             // Update mode description
             updateModeDescription();
@@ -1254,6 +1332,9 @@
                 conveyorTrack.style.transform = 'translateY(0)';
                 renderTasks();
             }
+
+            // ADDED: Trigger OBS Refresh by changing the URL hash
+            triggerObsRefresh(); 
         }
 
         function updateModeDescription() {
@@ -1379,7 +1460,7 @@
 
             // When list scrolls past top, reset to bottom — but hide the reset visually
             if (Math.abs(conveyorPosition) >=  containerHeight) {
-                // Hide the track before resetting (so the jump isn’t seen)
+                // Hide the track before resetting (so the jump isn't seen)
                 conveyorTrack.style.opacity = '0';
                 conveyorTrack.style.transition = 'none'; // disable smooth transition during reset
 
@@ -1451,18 +1532,25 @@
 
         // Initialize display mode on page load
         function initializeDisplayMode() {
-            displayMode = 'loop-incompleted';
-            document.getElementById('mode-loop-incompleted').checked = true;
-            
-            // Stop any existing conveyor
-            stopConveyor();
-            
-            // Initialize conveyor for the default mode
-            if (currentTab === 'active') {
-                initConveyor();
-            }
-            
-            updateModeDescription();
+            // Load display mode from storage (this will set displayMode variable and update radio button)
+            loadDisplayMode(() => {
+                // If no stored mode, default to 'loop-incompleted'
+                if (!displayMode) {
+                    displayMode = 'loop-incompleted';
+                    document.getElementById('mode-loop-incompleted').checked = true;
+                    saveDisplayMode(); // Save the default
+                }
+                
+                // Stop any existing conveyor
+                stopConveyor();
+                
+                // Initialize conveyor for the current mode
+                if (currentTab === 'active' && displayMode !== 'static') {
+                    initConveyor();
+                }
+                
+                updateModeDescription();
+            });
         }
 
         // Event listeners
@@ -1517,12 +1605,7 @@
                 radio.addEventListener('change', handleDisplayModeChange);
             });
             
-            // Set the initial display mode and trigger the change
-            displayMode = 'loop-incompleted';
-            document.getElementById('mode-loop-incompleted').checked = true;
-            handleDisplayModeChange();
-            
-            // Initialize mode description
+            // Initialize mode description (will be updated by initializeDisplayMode)
             updateModeDescription();
         });
 
@@ -1539,7 +1622,7 @@
                 setTimeout(resumeConveyor, 1000);
             }
         });
-
+        
         // Initial load
         loadKeywords();
         loadTasks();
