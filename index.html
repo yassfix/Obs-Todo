@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced Task Dashboard (Daily Progress)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #6c5ce7;
@@ -274,6 +275,39 @@
         .tasks-container::-webkit-scrollbar-thumb:hover {
             background-color: var(--primary);
         }
+        
+        /* --- NEW STYLES FOR ORDER BUTTONS --- */
+        .task-order-controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin-right: 8px;
+            align-self: stretch; /* Make it fill height */
+        }
+        .order-btn {
+            background: none;
+            border: none;
+            color: var(--primary-light);
+            cursor: pointer;
+            font-size: 0.7rem;
+            line-height: 1;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        .order-btn:hover:not(:disabled) {
+            background-color: rgba(255,255,255,0.1);
+        }
+        .order-btn:disabled {
+            color: rgba(255,255,255,0.2);
+            cursor: not-allowed;
+        }
+        /* When order controls are present, they have margin-right, so checkbox doesn't need it */
+        .task-order-controls + .task-checkbox {
+            margin-right: 0;
+        }
+        /* --- END NEW STYLES --- */
+
 
         /* For mobile responsiveness */
         @media (max-width:600px){
@@ -298,6 +332,10 @@
                 flex-direction: column;
                 gap: 10px;
             }
+            /* ADDED: Reporting responsive styles */
+            .reporting-stats {
+                flex-direction: column;
+            }
         }
         /* Add to CSS section for smooth bottom entrance */
         .conveyor-reset {
@@ -314,17 +352,131 @@
                 opacity: 1;
             }
         }
+
+        /* --- ADDED: REPORTING STYLES --- */
+        #reporting-content-wrapper {
+            padding-top: 15px;
+        }
+        .reporting-stats {
+            display: flex;
+            gap: 15px;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background-color: rgba(255,255,255,.05);
+            border-radius: 8px;
+            padding: 15px;
+            flex: 1;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--primary-light);
+            margin-top: 5px;
+        }
+        .chart-container h3 {
+            text-align: center;
+            color: var(--primary-light);
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        /* --- END: REPORTING STYLES --- */
+
+        /* --- ADDED: LOGIN STYLES --- */
+        #login-container {
+            display: none;
+            background-color: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 400px;
+            margin: 50px auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,.2);
+        }
+        #login-container .header h1 {
+            margin-bottom: 20px;
+        }
+        #login-container form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        #login-container input {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            background-color: rgba(255,255,255,.1);
+            color: var(--text);
+        }
+        #login-container button {
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #signup-btn {
+            background-color: var(--primary);
+        }
+        #login-btn {
+            background-color: var(--secondary);
+        }
+        #logout-btn {
+            background: none;
+            border: 1px solid var(--primary-light);
+            color: var(--primary-light);
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 0.7rem;
+        }
+        /* --- END: LOGIN STYLES --- */
     </style>
 </head>
 <body>
-    <div class="dashboard">
+    <!-- ADDED: Login Container -->
+    <div id="login-container" style="display: none;">
         <div class="header">
-            <h1>Obs Todo</h1>
+            <h1>Obs Todo - Login</h1>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: var(--primary); margin-bottom: 15px;">Sign Up</h3>
+            <form id="signup-form">
+                <input type="email" id="signup-email" placeholder="Email">
+                <input type="password" id="signup-password" placeholder="Password">
+                <button type="submit" id="signup-btn">Sign Up</button>
+            </form>
+        </div>
+        
+        <div>
+            <h3 style="color: var(--primary); margin-bottom: 15px;">Login</h3>
+            <form id="login-form">
+                <input type="email" id="login-email" placeholder="Email">
+                <input type="password" id="login-password" placeholder="Password">
+                <button type="submit" id="login-btn">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- UPDATED: Dashboard wrapper with id -->
+    <div class="dashboard" id="dashboard-wrapper">
+        <!-- UPDATED: Header with logout button -->
+        <div class="header">
+            <h1>Obs Todo <button id="logout-btn" style="display: none;">Logout</button></h1>
         </div>
         <div class="focus-section">
             <div class="tabs-container">
                 <div class="tab active" data-tab="active">Current Focus</div>
                 <div class="tab" data-tab="completed">Completed Tasks</div>
+                <div class="tab" data-tab="reporting">Reporting</div>
             </div>
             
             <div class="time-stats-container">
@@ -349,48 +501,78 @@
                 </div>
             </div>
             
-            <div class="tasks-container" id="tasks-container">
-                <div class="conveyor-container" id="conveyor-container">
-                    <div class="conveyor-track" id="conveyor-track">
-                        <ul class="task-list" id="task-list"></ul>
+            <div id="task-content-wrapper">
+                <div class="tasks-container" id="tasks-container">
+                    <div class="conveyor-container" id="conveyor-container">
+                        <div class="conveyor-track" id="conveyor-track">
+                            <ul class="task-list" id="task-list"></ul>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="new-task">
-                <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
-                <button class="new-task-button" id="add-task-btn">Add</button>
-            </div>
-            <button class="manage-keywords-btn" id="manage-keywords-btn">Manage Keywords</button>
-            <div class="stats">
-                <span id="completed-count">0 of 0 completed today</span>
-                <span id="remaining-count">0 tasks remaining</span>
-            </div>
-            
-            <div class="display-mode-section">
-                <h3>Display Mode</h3>
-                <div class="mode-selector">
-                    <div class="mode-option">
-                        <input type="radio" id="mode-static" name="display-mode" value="static" >
-                        <label for="mode-static">Static Todo List</label>
+                <div class="new-task">
+                    <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
+                    <button class="new-task-button" id="add-task-btn">Add</button>
+                </div>
+                <button class="manage-keywords-btn" id="manage-keywords-btn">Manage Keywords</button>
+                <div class="stats">
+                    <span id="completed-count">0 of 0 completed today</span>
+                    <span id="remaining-count">0 tasks remaining</span>
+                </div>
+                
+                <div class="display-mode-section">
+                    <h3>Display Mode</h3>
+                    <div class="mode-selector">
+                        <div class="mode-option">
+                            <input type="radio" id="mode-static" name="display-mode" value="static" >
+                            <label for="mode-static">Static Todo List</label>
+                        </div>
+                        <div class="mode-option">
+                            <input type="radio" id="mode-loop-incompleted" name="display-mode" value="loop-incompleted" checked>
+                            <label for="mode-loop-incompleted">Loop Incompleted Tasks</label>
+                        </div>
+                        <div class="mode-option">
+                            <input type="radio" id="mode-loop-all" name="display-mode" value="loop-all">
+                            <label for="mode-loop-all">Loop All Tasks</label>
+                        </div>
+                        <div class="mode-option">
+                            <input type="radio" id="mode-rotate-incompleted" name="display-mode" value="rotate-incompleted">
+                            <label for="mode-rotate-incompleted">Looped Tasks with top Task Pinned</label>
+                        </div>
                     </div>
-                    <div class="mode-option">
-                        <input type="radio" id="mode-loop-incompleted" name="display-mode" value="loop-incompleted" checked>
-                        <label for="mode-loop-incompleted">Loop Incompleted Tasks</label>
-                    </div>
-                    <div class="mode-option">
-                        <input type="radio" id="mode-loop-all" name="display-mode" value="loop-all">
-                        <label for="mode-loop-all">Loop All Tasks</label>
-                    </div>
-                    <div class="mode-option">
-                        <input type="radio" id="mode-rotate-incompleted" name="display-mode" value="rotate-incompleted">
-                        <label for="mode-rotate-incompleted">Rotate Incompleted Tasks (Keep Top)</label>
+                    <div class="mode-description" id="mode-description">
+                        Current tasks are displayed in a static list.
                     </div>
                 </div>
-                <div class="mode-description" id="mode-description">
-                    Current tasks are displayed in a static list.
+            </div> <div id="reporting-content-wrapper" style="display: none;">
+                <div class="section-header">
+                    <h2>Your Statistics</h2>
                 </div>
-            </div>
-        </div>
+                
+                <div class="reporting-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-current-streak">0</div>
+                        <div class="stat-label">Current Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-longest-streak">0</div>
+                        <div class="stat-label">Longest Streak</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="report-total-completed">0</div>
+                        <div class="stat-label">Total Tasks Completed</div>
+                    </div>
+                </div>
+
+                <div class="chart-container" style="margin-top: 20px;">
+                    <h3>Tasks Completed Per Day (Last 30 Days)</h3>
+                    <canvas id="tasks-per-day-chart"></canvas>
+                </div>
+
+                <div class="chart-container" style="margin-top: 20px;">
+                    <h3>Time Spent Per Keyword (Completed Tasks)</h3>
+                    <canvas id="time-per-keyword-chart"></canvas>
+                </div>
+            </div> </div>
         <div class="footer">
             <p id="timestamp">Updated: --</p>
         </div>
@@ -412,6 +594,7 @@
 
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -458,10 +641,25 @@
         const newKeywordInput = document.getElementById('new-keyword-input');
         const addNewKeywordBtn = document.getElementById('add-new-keyword-btn');
 
+        // ADDED: Authentication DOM elements
+        const loginContainer = document.getElementById('login-container');
+        const dashboardWrapper = document.getElementById('dashboard-wrapper');
+        const logoutBtn = document.getElementById('logout-btn');
+        const signupForm = document.getElementById('signup-form');
+        const loginForm = document.getElementById('login-form');
+        const signupEmail = document.getElementById('signup-email');
+        const signupPassword = document.getElementById('signup-password');
+        const loginEmail = document.getElementById('login-email');
+        const loginPassword = document.getElementById('login-password');
+
+        // ADDED: Content wrapper DOM elements
+        const taskContentWrapper = document.getElementById('task-content-wrapper');
+        const reportingContentWrapper = document.getElementById('reporting-content-wrapper');
+
         // App state
         let tasks = {};
         let dbRef = null;
-        let currentTab = 'active';
+        let currentTab = 'active'; // This tracks 'active' vs 'completed' for the task list
         let timerIntervals = {};
         let dragSrcEl = null;
         let editingTaskId = null;
@@ -479,6 +677,14 @@
         // Default keywords
         let keywords = ['Work', 'Personal', 'Urgent', 'Important', 'Shopping'];
 
+        // ADDED: Chart variables
+        let tasksPerDayChart = null;
+        let timePerKeywordChart = null;
+
+        // ADDED: Authentication state
+        let currentUser = null;
+        let currentUserId = null;
+
         // Utility function to check if a date is today
         function isToday(date) {
             const today = new Date();
@@ -487,6 +693,25 @@
                    checkDate.getMonth() === today.getMonth() &&
                    checkDate.getFullYear() === today.getFullYear();
         }
+
+        // --- ADDED: Reporting Helper Functions ---
+        // Helper function to check if two dates are the same day
+        function isSameDay(d1, d2) {
+            const date1 = new Date(d1);
+            const date2 = new Date(d2);
+            return date1.getFullYear() === date2.getFullYear() &&
+                    date1.getMonth() === date2.getMonth() &&
+                    date1.getDate() === date2.getDate();
+        }
+
+        // Helper function to add days to a date
+        function addDays(date, days) {
+            const result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+        // --- END: Reporting Helper Functions ---
+
 
         // ADDED: Function to trigger OBS refresh
         function triggerObsRefresh() {
@@ -683,7 +908,7 @@
         function removeTask(taskId) {
             if (confirm('Are you sure you want to remove this task?')) {
                 if (useFirebase) {
-                    firebase.database().ref('tasks/' + taskId).remove();
+                    dbRef.child(taskId).remove();
                 } else {
                     delete tasks[taskId];
                     saveAllTasks();
@@ -691,6 +916,43 @@
                 }
             }
         }
+        
+        // --- NEW: Task Reordering Function ---
+        function moveTask(taskId, direction) {
+            if (currentTab !== 'active') return; // Only reorder active tasks
+
+            // Get all active tasks, sorted by their current order
+            const activeTasks = Object.entries(tasks)
+                .filter(([id, task]) => !task.completed)
+                .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+
+            // Create an array of just the keys in the correct order
+            const taskKeys = activeTasks.map(([id]) => id);
+            
+            // Find the index of the task we're moving
+            const currentIndex = taskKeys.indexOf(taskId);
+
+            if (direction === 'up' && currentIndex > 0) {
+                // Swap with the element above
+                [taskKeys[currentIndex], taskKeys[currentIndex - 1]] = [taskKeys[currentIndex - 1], taskKeys[currentIndex]];
+            } else if (direction === 'down' && currentIndex < taskKeys.length - 1) {
+                // Swap with the element below
+                [taskKeys[currentIndex], taskKeys[currentIndex + 1]] = [taskKeys[currentIndex + 1], taskKeys[currentIndex]];
+            } else {
+                return; // Can't move further
+            }
+
+            // Re-assign all 'order' properties based on the new array order
+            // This normalizes all order numbers from 0 to N
+            taskKeys.forEach((key, index) => {
+                tasks[key].order = index;
+            });
+
+            // Save the changes and re-render the entire list
+            saveAllTasks();
+            renderTasks();
+        }
+        // --- END: Task Reordering Function ---
 
         // Task editing functions
         function startEditingTask(taskId) {
@@ -713,7 +975,7 @@
                 const newText = input.value.trim();
                 if (newText) {
                     if (useFirebase) {
-                        firebase.database().ref('tasks/' + taskId).update({ text: newText });
+                        dbRef.child(taskId).update({ text: newText });
                     } else {
                         tasks[taskId].text = newText;
                         saveAllTasks();
@@ -746,7 +1008,7 @@
             }
             
             if (useFirebase) {
-                firebase.database().ref('tasks/' + taskId).update({ keywords: task.keywords });
+                dbRef.child(taskId).update({ keywords: task.keywords });
             } else {
                 saveAllTasks();
             }
@@ -761,7 +1023,7 @@
                     task.keywords.splice(index, 1);
                     
                     if (useFirebase) {
-                        firebase.database().ref('tasks/' + taskId).update({ keywords: task.keywords });
+                        dbRef.child(taskId).update({ keywords: task.keywords });
                     } else {
                         saveAllTasks();
                     }
@@ -790,7 +1052,7 @@
                     task.keywords.push(newKeyword);
                     
                     if (useFirebase) {
-                        firebase.database().ref('tasks/' + taskId).update({ keywords: task.keywords });
+                        dbRef.child(taskId).update({ keywords: task.keywords });
                     } else {
                         saveAllTasks();
                     }
@@ -803,16 +1065,16 @@
         }
 
         function saveKeywords() {
-            if (useFirebase) {
-                firebase.database().ref('keywords').set(keywords);
+            if (useFirebase && currentUserId) {
+                firebase.database().ref('users/' + currentUserId + '/keywords').set(keywords);
             } else {
                 localStorage.setItem('obs_todo_keywords', JSON.stringify(keywords));
             }
         }
 
         function loadKeywords() {
-            if (useFirebase) {
-                firebase.database().ref('keywords').once('value').then(snap => {
+            if (useFirebase && currentUserId) {
+                firebase.database().ref('users/' + currentUserId + '/keywords').once('value').then(snap => {
                     const storedKeywords = snap.val();
                     if (storedKeywords && storedKeywords.length > 0) {
                         keywords = storedKeywords;
@@ -828,16 +1090,16 @@
 
         // Display Mode Storage Functions
         function saveDisplayMode() {
-            if (useFirebase) {
-                firebase.database().ref('displayMode').set(displayMode);
+            if (useFirebase && currentUserId) {
+                firebase.database().ref('users/' + currentUserId + '/displayMode').set(displayMode);
             } else {
                 localStorage.setItem('obs_todo_displayMode', displayMode);
             }
         }
 
         function loadDisplayMode(callback) {
-            if (useFirebase) {
-                firebase.database().ref('displayMode').once('value').then(snap => {
+            if (useFirebase && currentUserId) {
+                firebase.database().ref('users/' + currentUserId + '/displayMode').once('value').then(snap => {
                     const storedMode = snap.val();
                     if (storedMode) {
                         displayMode = storedMode;
@@ -929,7 +1191,7 @@
                             task.keywords[keywordIndex] = newKeyword;
                             
                             if (useFirebase) {
-                                firebase.database().ref('tasks/' + taskId).update({ keywords: task.keywords });
+                                dbRef.child(taskId).update({ keywords: task.keywords });
                             }
                         }
                     });
@@ -963,7 +1225,7 @@
                         task.keywords.splice(keywordIndex, 1);
                         
                         if (useFirebase) {
-                            firebase.database().ref('tasks/' + taskId).update({ keywords: task.keywords });
+                            dbRef.child(taskId).update({ keywords: task.keywords });
                         }
                     }
                 });
@@ -994,6 +1256,31 @@
 
             const isExpanded = expandedTasks[taskId];
             
+            // --- NEW: Logic for order buttons ---
+            let orderControlsHTML = '';
+            if (currentTab === 'active') {
+                // Get all active tasks, sorted by their current order
+                const activeTasks = Object.entries(tasks)
+                    .filter(([id, task]) => !task.completed)
+                    .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+                
+                // Find the index of the current task in the sorted list
+                const currentIndex = activeTasks.findIndex(([id]) => id === taskId);
+                
+                // Determine if it's the first or last task
+                const isFirst = currentIndex === 0;
+                const isLast = currentIndex === activeTasks.length - 1;
+
+                // Create the HTML for the buttons, disabling them if at the top or bottom
+                orderControlsHTML = `
+                    <div class="task-order-controls">
+                        <button class="order-btn order-up" onclick="moveTask('${taskId}', 'up')" ${isFirst ? 'disabled' : ''}>▲</button>
+                        <button class="order-btn order-down" onclick="moveTask('${taskId}', 'down')" ${isLast ? 'disabled' : ''}>▼</button>
+                    </div>
+                `;
+            }
+            // --- END: New logic ---
+
             // Keyword related elements
             const keywordsContainer = document.createElement('div');
             keywordsContainer.className = 'keywords-container';
@@ -1060,6 +1347,7 @@
                 // Editing view
                 taskContentHTML = `
                     <div class="task-main-content">
+                        ${orderControlsHTML}
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
                         <input type="text" class="task-input" value="${escapeHtml(task.text)}">
                         <div class="task-actions">
@@ -1073,6 +1361,7 @@
                 const isTimerRunning = !!timerIntervals[taskId];
                 taskContentHTML = `
                     <div class="task-main-content">
+                        ${orderControlsHTML}
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
                         <div class="task-content">
                             <span class="task-text">${escapeHtml(task.text)}</span>
@@ -1159,6 +1448,220 @@
                 initConveyor();
             }
         }
+        
+        // --- ADDED: Reporting Function ---
+        function renderReports() {
+            const allTasks = Object.values(tasks);
+            const completedTasks = allTasks.filter(t => t.completed && t.completedAt);
+            
+            // --- 1. Calculate Stats ---
+            
+            // Total Completed
+            const totalCompleted = completedTasks.length;
+            document.getElementById('report-total-completed').textContent = totalCompleted;
+
+            // Streak Calculations
+            let completionDays = {};
+            completedTasks.forEach(task => {
+                const day = new Date(task.completedAt).toDateString();
+                completionDays[day] = true;
+            });
+            // Sort descending (newest first)
+            const uniqueCompletionDays = Object.keys(completionDays).map(day => new Date(day)).sort((a, b) => b - a); 
+
+            let currentStreak = 0;
+            let longestStreak = 0;
+
+            if (uniqueCompletionDays.length > 0) {
+                const today = new Date();
+                const yesterday = addDays(today, -1);
+                
+                let dayToCheck = new Date();
+                let streakActive = false;
+                
+                // Check if streak is active today
+                if (isSameDay(uniqueCompletionDays[0], today)) {
+                    streakActive = true;
+                    dayToCheck = today;
+                } 
+                // Check if streak was active yesterday
+                else if (isSameDay(uniqueCompletionDays[0], yesterday)) {
+                    streakActive = true;
+                    dayToCheck = yesterday;
+                }
+                
+                if (streakActive) {
+                    currentStreak = 1;
+                    let i = 1; // Start checking from the *next* item in the sorted list
+                    while (i < uniqueCompletionDays.length) {
+                        const nextDayToFind = addDays(dayToCheck, -i); // This is the date we expect to find
+                        if (isSameDay(uniqueCompletionDays[i], nextDayToFind)) {
+                            currentStreak++;
+                            i++;
+                        } else {
+                            break; // Gap in streak
+                        }
+                    }
+                }
+
+                // Longest Streak
+                const sortedDaysAsc = uniqueCompletionDays.sort((a,b) => a - b);
+                if (sortedDaysAsc.length > 0) {
+                    longestStreak = 1;
+                    let currentRun = 1;
+                    for (let i = 1; i < sortedDaysAsc.length; i++) {
+                        const dayDiff = (sortedDaysAsc[i] - sortedDaysAsc[i-1]) / (1000 * 60 * 60 * 24);
+                        if (dayDiff === 1) {
+                            currentRun++;
+                        } else if (dayDiff > 1) {
+                            currentRun = 1;
+                        }
+                        // if diff = 0, same day, run continues
+                        longestStreak = Math.max(longestStreak, currentRun);
+                    }
+                }
+            }
+
+            document.getElementById('report-current-streak').textContent = currentStreak;
+            document.getElementById('report-longest-streak').textContent = longestStreak;
+
+            // --- 2. Tasks Completed Per Day Chart ---
+            const tasksPerDay = {};
+            completedTasks.forEach(task => {
+                // Use a consistent, non-locale format for keys
+                const d = new Date(task.completedAt);
+                const dayKey = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+                tasksPerDay[dayKey] = (tasksPerDay[dayKey] || 0) + 1;
+            });
+            
+            // Get last 30 days for chart
+            const chartLabels = [];
+            const chartData = [];
+            for (let i = 29; i >= 0; i--) {
+                const day = new Date();
+                day.setDate(day.getDate() - i);
+                const label = day.toLocaleDateString();
+                const dayKey = `${day.getFullYear()}-${day.getMonth() + 1}-${day.getDate()}`;
+                chartLabels.push(label);
+                chartData.push(tasksPerDay[dayKey] || 0);
+            }
+
+            const ctxTasks = document.getElementById('tasks-per-day-chart').getContext('2d');
+            if (tasksPerDayChart) {
+                tasksPerDayChart.destroy();
+            }
+            tasksPerDayChart = new Chart(ctxTasks, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Tasks Completed',
+                        data: chartData,
+                        backgroundColor: 'var(--secondary)',
+                        borderColor: 'var(--primary-light)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                color: 'var(--text)'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: 'var(--text)'
+                            },
+                            grid: {
+                                color: 'rgba(255,255,255,0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: 'var(--text)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // --- 3. Time Spent Per Keyword Chart ---
+            const timePerKeyword = {};
+            completedTasks.forEach(task => {
+                const time = task.timeSpent || 0;
+                if (time > 0) {
+                    if (task.keywords && task.keywords.length > 0) {
+                        task.keywords.forEach(kw => {
+                            timePerKeyword[kw] = (timePerKeyword[kw] || 0) + time;
+                        });
+                    } else {
+                        timePerKeyword['Uncategorized'] = (timePerKeyword['Uncategorized'] || 0) + time;
+                    }
+                }
+            });
+
+            const pieLabels = Object.keys(timePerKeyword);
+            const pieData = Object.values(timePerKeyword).map(time => (time / 60).toFixed(2)); // Show in minutes
+            
+            // Pie chart background colors
+            const pieColors = [
+                '#6c5ce7', '#a29bfe', '#00b894', '#fd79a8', '#fdcb6e', '#e17055',
+                '#0984e3', '#00cec9', '#fab1a0', '#ffeaa7'
+            ];
+            const backgroundColors = pieLabels.map((_, i) => pieColors[i % pieColors.length]);
+
+            const ctxKeywords = document.getElementById('time-per-keyword-chart').getContext('2d');
+            if (timePerKeywordChart) {
+                timePerKeywordChart.destroy();
+            }
+            timePerKeywordChart = new Chart(ctxKeywords, {
+                type: 'pie',
+                data: {
+                    labels: pieLabels,
+                    datasets: [{
+                        label: 'Time Spent (in minutes)',
+                        data: pieData,
+                        backgroundColor: backgroundColors,
+                        borderColor: 'var(--background)',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: 'var(--text)'
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += context.parsed + ' minutes';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // --- END: Reporting Function ---
 
         function updateTaskDisplay(taskId) {
             const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
@@ -1273,14 +1776,18 @@
         }
 
         function saveAllTasks() {
+            if (useFirebase && currentUserId) {
+                firebase.database().ref('users/' + currentUserId + '/tasks').set(tasks);
+                return;
+            }
             if (!useFirebase) {
                 localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
             }
         }
 
         function loadTasks() {
-            if (useFirebase) {
-                dbRef = firebase.database().ref('tasks');
+            if (useFirebase && currentUserId) {
+                dbRef = firebase.database().ref('users/' + currentUserId + '/tasks');
                 dbRef.on('value', snap => {
                     tasks = snap.val() || {};
                     // Load display mode first, then render tasks
@@ -1309,14 +1816,8 @@
             // Update mode description
             updateModeDescription();
             
-            // Stop any existing conveyor
+            // Stop any existing conveyor and clean up
             stopConveyor();
-            
-            // Clear any existing intervals
-            if (conveyorInterval) {
-                clearInterval(conveyorInterval);
-                conveyorInterval = null;
-            }
             
             // Reset conveyor state
             conveyorTasks = [];
@@ -1415,6 +1916,12 @@
                 conveyorInterval = null;
             }
             
+            // Clean up static container if it exists
+            const staticContainer = document.getElementById('static-top-task');
+            if (staticContainer) {
+                staticContainer.remove();
+            }
+            
             // Reset container to normal rendering
             taskListEl.innerHTML = '';
             conveyorContainer.classList.remove('conveyor-container');
@@ -1422,32 +1929,79 @@
         }
 
         function renderConveyorTasks() {
-            taskListEl.innerHTML = '';
-            conveyorContainer.classList.add('conveyor-container');
-            
-            if (conveyorTasks.length === 0) {
-                taskListEl.innerHTML = `<li class="empty-state">No tasks to display.</li>`;
-                return;
+            // Find or create the static container for the fixed top task
+            const tasksContainer = document.getElementById('tasks-container');
+            const staticTaskContainerId = 'static-top-task';
+            let staticContainer = document.getElementById(staticTaskContainerId);
+
+            // Clean up static container if we're NOT in rotate-incompleted mode
+            if (displayMode !== 'rotate-incompleted' && staticContainer) {
+                staticContainer.remove();
+                staticContainer = null;
             }
-            
-            // Create all tasks for the conveyor
-            conveyorTasks.forEach(([taskId, task]) => {
-                const taskItem = renderTaskElement(taskId, task);
-                taskListEl.appendChild(taskItem);
-            });
-            
-            // For rotate-incompleted mode, keep the first task fixed
-            if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 1) {
-                const firstTask = taskListEl.querySelector('.task-item:first-child');
-                if (firstTask) {
-                    firstTask.style.position = 'sticky';
-                    firstTask.style.top = '0';
-                    firstTask.style.zIndex = '10';
-                    firstTask.style.backgroundColor = 'rgba(255,255,255,.08)';
+
+            // 1. Mode: Rotate Incompleted (Static Top + Moving Conveyor)
+            if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 0) {
+                
+                // Ensure the static container exists
+                if (!staticContainer) {
+                    staticContainer = document.createElement('div');
+                    staticContainer.id = staticTaskContainerId;
+                    staticContainer.style.marginBottom = '8px'; // Space between static and moving parts
+                    // Insert it before the conveyor-container
+                    tasksContainer.insertBefore(staticContainer, conveyorContainer);
                 }
+                
+                // Render the static task (first task in the list)
+                const [staticTaskId, staticTask] = conveyorTasks[0];
+                const staticTaskItem = renderTaskElement(staticTaskId, staticTask);
+                
+                // Apply visual cue and remove list margin
+                staticTaskItem.style.marginBottom = '0';
+                staticTaskItem.style.backgroundColor = 'rgba(255,255,255,.12)';
+                
+                staticContainer.innerHTML = '';
+                staticContainer.appendChild(staticTaskItem);
+                
+                // Render the moving tasks (all subsequent tasks)
+                const movingTasks = conveyorTasks.slice(1);
+                taskListEl.innerHTML = '';
+                
+                if (movingTasks.length === 0) {
+                    taskListEl.innerHTML = `<li class="empty-state" style="padding-top:0; padding-bottom:10px;">No other tasks to loop.</li>`;
+                } else {
+                    movingTasks.forEach(([taskId, task]) => {
+                        const taskItem = renderTaskElement(taskId, task);
+                        taskListEl.appendChild(taskItem);
+                    });
+                }
+                
+                // Ensure conveyor mode is active
+                conveyorContainer.classList.add('conveyor-container');
+
+            } else {
+                // 2. Mode: Other Loops (Full Moving Conveyor) or Static (Render everything in one list)
+                
+                // Clean up static container if it exists (this is the key fix)
+                if (staticContainer) {
+                    staticContainer.remove();
+                }
+
+                taskListEl.innerHTML = '';
+                conveyorContainer.classList.add('conveyor-container');
+                
+                if (conveyorTasks.length === 0) {
+                    taskListEl.innerHTML = `<li class="empty-state">No tasks to display.</li>`;
+                    return;
+                }
+                
+                // Render all tasks for the full conveyor loop
+                conveyorTasks.forEach(([taskId, task]) => {
+                    const taskItem = renderTaskElement(taskId, task);
+                    taskListEl.appendChild(taskItem);
+                });
             }
         }
-
         
         function moveConveyor() {
             if (conveyorTasks.length === 0) return;
@@ -1482,9 +2036,9 @@
             }
 
             // Rotate mode logic (unchanged)
-            if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 1) {
+            /*if (displayMode === 'rotate-incompleted' && conveyorTasks.length > 1) {
                 handleRotateIncompleted();
-            }
+            }*/
         }
 
         function handleRotateIncompleted() {
@@ -1553,6 +2107,109 @@
             });
         }
 
+        // --- ADDED: Authentication Functions ---
+        function showLogin() {
+            loginContainer.style.display = 'block';
+            dashboardWrapper.style.display = 'none';
+        }
+
+        function showDashboard() {
+            loginContainer.style.display = 'none';
+            dashboardWrapper.style.display = 'block';
+            logoutBtn.style.display = 'inline-block';
+        }
+
+        function handleSignup(e) {
+            e.preventDefault();
+            const email = signupEmail.value;
+            const password = signupPassword.value;
+            
+            if (useFirebase) {
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        currentUser = userCredential.user;
+                        currentUserId = currentUser.uid;
+                        showDashboard();
+                        loadTasks(); // Load user-specific tasks
+                    })
+                    .catch((error) => {
+                        alert('Signup error: ' + error.message);
+                    });
+            } else {
+                // Mock authentication for localStorage mode
+                currentUser = { email: email };
+                currentUserId = 'local_user';
+                showDashboard();
+                loadTasks();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = loginEmail.value;
+            const password = loginPassword.value;
+            
+            if (useFirebase) {
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        currentUser = userCredential.user;
+                        currentUserId = currentUser.uid;
+                        showDashboard();
+                        loadTasks(); // Load user-specific tasks
+                    })
+                    .catch((error) => {
+                        alert('Login error: ' + error.message);
+                    });
+            } else {
+                // Mock authentication for localStorage mode
+                currentUser = { email: email };
+                currentUserId = 'local_user';
+                showDashboard();
+                loadTasks();
+            }
+        }
+
+        function handleLogout() {
+            if (useFirebase) {
+                firebase.auth().signOut();
+            }
+            currentUser = null;
+            currentUserId = null;
+            showLogin();
+            // Clear form fields
+            signupEmail.value = '';
+            signupPassword.value = '';
+            loginEmail.value = '';
+            loginPassword.value = '';
+        }
+
+        function initializeAuth() {
+            if (useFirebase) {
+                firebase.auth().onAuthStateChanged((user) => {
+                    if (user) {
+                        currentUser = user;
+                        currentUserId = user.uid;
+                        showDashboard();
+                        loadTasks();
+                    } else {
+                        showLogin();
+                    }
+                });
+            } else {
+                // For localStorage mode, check if we have a mock user
+                const mockUser = localStorage.getItem('obs_todo_mock_user');
+                if (mockUser) {
+                    currentUser = { email: mockUser };
+                    currentUserId = 'local_user';
+                    showDashboard();
+                    loadTasks();
+                } else {
+                    showLogin();
+                }
+            }
+        }
+        // --- END: Authentication Functions ---
+
         // Event listeners
         addBtn.addEventListener('click', addTask);
         inputEl.addEventListener('keypress', e => {
@@ -1561,23 +2218,46 @@
             }
         });
 
+        // --- UPDATED: Tab switching logic ---
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
-                currentTab = tab.dataset.tab;
+                
+                const selectedTab = tab.dataset.tab;
                 editingTaskId = null; // Cancel editing when switching tabs
-                
-                // Stop conveyor if switching to completed tab
-                if (currentTab === 'completed') {
+
+                if (selectedTab === 'active' || selectedTab === 'completed') {
+                    // Show tasks, hide reporting
+                    taskContentWrapper.style.display = 'block';
+                    reportingContentWrapper.style.display = 'none';
+                    
+                    // Set the task list tab and re-render
+                    currentTab = selectedTab;
+                    
+                    // Stop conveyor and clean up static container when switching to completed tab
+                    if (currentTab === 'completed') {
+                        stopConveyor();
+                    } else if (displayMode !== 'static') {
+                        initConveyor();
+                    }
+                    
+                    renderTasks();
+                    
+                } else if (selectedTab === 'reporting') {
+                    // Hide tasks, show reporting
+                    taskContentWrapper.style.display = 'none';
+                    reportingContentWrapper.style.display = 'block';
+                    
+                    // Stop conveyor
                     stopConveyor();
-                } else if (displayMode !== 'static') {
-                    initConveyor();
+                    
+                    // Render the reports
+                    renderReports();
                 }
-                
-                renderTasks();
             });
         });
+        // --- END: Tab switching logic ---
 
         // Keyword management listeners
         manageKeywordsBtn.addEventListener('click', showKeywordManagement);
@@ -1622,10 +2302,15 @@
                 setTimeout(resumeConveyor, 1000);
             }
         });
+
+        // --- ADDED: Authentication Event Listeners ---
+        signupForm.addEventListener('submit', handleSignup);
+        loginForm.addEventListener('submit', handleLogin);
+        logoutBtn.addEventListener('click', handleLogout);
         
         // Initial load
         loadKeywords();
-        loadTasks();
+        initializeAuth(); // Initialize authentication instead of directly loading tasks
     </script>
 </body>
 </html>
