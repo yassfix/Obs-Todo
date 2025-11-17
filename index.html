@@ -899,6 +899,74 @@
             gap: 5px;
         }
         
+        .header-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        min-height: 40px;
+    }
+
+    /* Media Query for Small Screens (e.g., phones) */
+    @media (max-width: 680px) {
+
+
+        button#toggle-user-status-btn {
+            margin-left: -70px !important;
+            
+        }
+
+        /* Target the container for stacking */
+        .header-controls {
+            /* Change the direction to stack items vertically */
+            flex-direction: column; 
+            
+            /* Center the items when stacked */
+            align-items: center; 
+            
+            /* Add some space between the stacked items */
+            gap: 10px; 
+            
+            /* Adjust width/padding if needed for the container itself */
+            padding: 10px 0; 
+        }
+        
+        /* Center the user status text */
+        #user-status {
+            text-align: center;
+            /* Ensure it takes full width for better centering */
+            width: 100%; 
+            margin-left:0px !important;
+        }
+
+        /* Adjust the Buy Me A Coffee container for better fit and centering */
+        .bmc-container {
+            /* Remove the scale/margin overrides which were likely for horizontal alignment */
+            margin-right: 0 !important;
+            
+            /* Center the button itself (if needed) and ensure it doesn't shrink */
+            width: auto !important;
+            flex-shrink: 0;
+            
+            /* You might want to adjust the button size back to normal/larger */
+            /* If you still want it small, keep the original inline styles, but centering is better */
+        }
+    }
+
+    /* New Style for Privacy Toggle */
+    .hidden-status {
+        /* Hide the text by default using a color transition for effect */
+        color: transparent !important; 
+        transition: color 0.5s ease;
+        /* Optional: Keep the space for the text */
+        min-width: 150px; 
+    }
+    .visible-status {
+        /* Make the text visible */
+        color: var(--primary-light) !important;
+    }
+
+
         /*  Minimal Mode Styles  */
     </style>
 </head>
@@ -961,7 +1029,21 @@
         <!--  Header with logout button -->
         <div class="header">
             <h1>Obs Todo <button id="logout-btn">Logout</button></h1>
-            <p id="user-status"></p>
+            
+            <div class="header-controls" style="display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 40px;">
+                
+                <div style="display: flex; align-items: center; margin-left: 100px;">
+                    <button id="toggle-user-status-btn" style="background: none; border: none; color: var(--primary-light); cursor: pointer; font-size: 1.2rem; margin-right: 8px;" title="Show/Hide User Status">
+                        🔒
+                    </button>
+                    <p id="user-status" class="hidden-status" style="margin: 0;"></p>
+                </div>
+
+                <div class="bmc-container" style="width: 120px; transform: scale(0.48); transform-origin: center-right; flex-shrink: 0; margin-right: 100px">
+                    <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="Construct.exe" data-color="#FFDD00" data-emoji="" data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+                </div>
+
+            </div>
         </div>
 
         <div class="focus-section">
@@ -1319,6 +1401,7 @@
         const loginPassword = document.getElementById('login-password');
         const guestBtn = document.getElementById('guest-btn');
         const userStatusEl = document.getElementById('user-status');
+        const toggleUserStatusBtn = document.getElementById('toggle-user-status-btn');
 
         // Password Reset DOM elements
         const forgotPasswordLink = document.getElementById('forgot-password-link');
@@ -1402,7 +1485,37 @@
         let frozenStreakDays = {}; 
 
         
-
+        // --- New Function to Toggle User Status Visibility ---
+        function toggleUserStatus() {
+            // Check if it currently has the hidden-status class
+            const isHidden = userStatusEl.classList.contains('hidden-status');
+            
+            if (isHidden) {
+                // SHOW: Remove hidden class and add visible class
+                userStatusEl.classList.remove('hidden-status');
+                userStatusEl.classList.add('visible-status');
+                // Change icon to 'unlocked/open eye'
+                toggleUserStatusBtn.textContent = '👁️'; 
+                toggleUserStatusBtn.title = 'Hide User Status';
+                
+                // Ensure the correct text color is set for visibility
+                if (isGuest) {
+                    userStatusEl.style.color = "var(--accent)";
+                } else {
+                    userStatusEl.style.color = "var(--primary-light)";
+                }
+                
+            } else {
+                // HIDE: Remove visible class and add hidden class
+                userStatusEl.classList.remove('visible-status');
+                userStatusEl.classList.add('hidden-status');
+                // Change icon to 'locked/closed eye'
+                toggleUserStatusBtn.textContent = '🔒'; 
+                toggleUserStatusBtn.title = 'Show User Status';
+                
+                // The CSS handles changing the color to transparent
+            }
+        }
         // Utility function to check if a date is today
         function isToday(date) {
             const today = new Date();
@@ -3277,14 +3390,43 @@
             dashboardWrapper.style.display = 'block';
             passwordResetContainer.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
+
+            // Get the container of the user status elements
+            const userStatusContainer = toggleUserStatusBtn.parentElement;
             
             // Update user status display
             if (isGuest) {
                 userStatusEl.textContent = "Guest Mode - Completed tasks will be deleted tomorrow";
-                userStatusEl.style.color = "var(--accent)";
+                
+                
+                // FOR GUEST: Make it visible by default
+                userStatusEl.classList.remove('hidden-status');
+                userStatusEl.classList.add('visible-status');
+                userStatusEl.style.color = "#fd79a8"; 
+
+                // Hide the toggle button
+                toggleUserStatusBtn.style.display = 'none'; 
+                
+                // Remove the large margin from the container
+                userStatusContainer.style.marginLeft = '0';
+                // Center the text (since the button is gone)
+                userStatusContainer.style.justifyContent = 'center';
+
+
             } else {
                 userStatusEl.textContent = `Logged in as ${currentUser.email}`;
-                userStatusEl.style.color = "var(--primary-light)";
+                
+                // FOR LOGGED-IN USER: Keep the privacy (hidden) default
+                userStatusEl.classList.add('hidden-status');
+                userStatusEl.classList.remove('visible-status');
+                toggleUserStatusBtn.textContent = '🔒';
+
+                // Show the button
+                toggleUserStatusBtn.style.display = 'inline-block'; 
+                
+                // Restore the default styles for non-guest mode
+                userStatusContainer.style.marginLeft = '100px';
+                userStatusContainer.style.justifyContent = 'flex-start'; // Default alignment
             }
         }
 
@@ -3565,6 +3707,7 @@
                 addTask();
             }
         });
+        toggleUserStatusBtn.addEventListener('click', toggleUserStatus);
 
        // --- Tab switching logic ---
         tabs.forEach(tab => {
