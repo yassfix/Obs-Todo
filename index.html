@@ -1827,6 +1827,9 @@
         let pomoAccumulatedContribution = 0; // Seconds tracked for stats
         let lastPomoTick = 0;
         let pomoEndTime = null;
+        let lastUiUpdate = 0;
+
+
 
         const alarmSound = document.getElementById('pomo-alarm');
 
@@ -2031,32 +2034,46 @@
 
 
 
-            function startMasterLoop() {
-                if (masterAnimationFrame) cancelAnimationFrame(masterAnimationFrame);
-                lastFrameTime = performance.now();
-                
-                function loop(timestamp) {
-                    const deltaTime = timestamp - lastFrameTime;
-                    lastFrameTime = timestamp;
+           // Add this variable outside the function to track UI updates
 
-                    // 1. Conveyor Logic (Existing)
-                    if (displayMode !== 'static' && !isConveyorPaused && conveyorTasks.length > 0) {
-                        moveConveyor(deltaTime); 
-                    }
+        function startMasterLoop() {
+            if (masterAnimationFrame) cancelAnimationFrame(masterAnimationFrame);
+            lastFrameTime = performance.now();
+            
+            function loop(timestamp) {
+                const deltaTime = timestamp - lastFrameTime;
+                lastFrameTime = timestamp;
 
-                    // 2. UPDATE POMODORO (New)
-                    updatePomodoro(deltaTime);
+                // 1. Conveyor Logic (KEEPS RUNNING EVERY FRAME = SMOOTH)
+                if (displayMode !== 'static' && !isConveyorPaused && conveyorTasks.length > 0) {
+                    moveConveyor(deltaTime); 
+                }
 
-                    // 3. Update Task Timers (Existing)
+                // 2. Update Logic (Math calculations run every frame)
+                updatePomodoro(deltaTime);
+
+                // 3. UI UPDATES (THROTTLED)
+                // Only update the text on screen if 1 second has passed
+                if (timestamp - lastUiUpdate >= 1000) {
+                    
+                    // Update Normal Task Timers
                     Object.keys(timerIntervals).forEach(taskId => {
                         updateTaskDisplay(taskId);
                     });
 
-                    masterAnimationFrame = requestAnimationFrame(loop);
+                    // Update Pomodoro Display text (if needed)
+                    if (isPomodoroMode) {
+                        updatePomoDisplay();
+                    }
+
+                    lastUiUpdate = timestamp;
                 }
-                
+
                 masterAnimationFrame = requestAnimationFrame(loop);
             }
+            
+            masterAnimationFrame = requestAnimationFrame(loop);
+        }
                     
 
 
