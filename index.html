@@ -1833,6 +1833,69 @@
 
         const alarmSound = document.getElementById('pomo-alarm');
 
+
+
+        function setupModeListeners() {
+            if (!useFirebase || !currentUserId || isGuest) return;
+
+            // 1. Listen for Display Mode Changes (Static, Loop, etc.)
+            firebase.database().ref('users/' + currentUserId + '/displayMode').on('value', snap => {
+                const newMode = snap.val();
+                // Only act if the mode is actually different from what we have
+                if (newMode && newMode !== displayMode) {
+                    console.log("Remote display mode change detected:", newMode);
+                    displayMode = newMode;
+                    
+                    // Update the Radio Button UI
+                    const radio = document.getElementById(`mode-${displayMode}`);
+                    if (radio) radio.checked = true;
+                    
+                    // Update Text Description
+                    updateModeDescription();
+                    
+                    // Reset/Restart Conveyor Logic
+                    stopConveyor();
+                    
+                    // Reset conveyor logic based on new mode
+                    if (displayMode !== 'static' && currentTab === 'active') {
+                        initConveyor();
+                    } else {
+                        conveyorContainer.classList.remove('conveyor-container');
+                        conveyorTrack.style.transform = 'translateY(0)';
+                        renderTasks();
+                    }
+                    
+                    // Trigger OBS refresh
+                    triggerObsRefresh();
+                }
+            });
+
+            // 2. Listen for Minimal Mode Changes
+            firebase.database().ref('users/' + currentUserId + '/minimalMode').on('value', snap => {
+                const newMinimal = snap.val();
+                // Only act if changed
+                if (newMinimal !== null && newMinimal !== minimalMode) {
+                    console.log("Remote minimal mode change detected:", newMinimal);
+                    minimalMode = newMinimal;
+                    
+                    // Update UI
+                    const radio = document.getElementById(`mode-${minimalMode ? 'minimal' : 'normal'}`);
+                    if (radio) radio.checked = true;
+                    
+                    applyMinimalMode();
+                }
+            });
+        }
+
+
+
+
+
+
+
+
+
+
         // --- POMODORO LOGIC ---
 
         function handleTimerModeChange() {
@@ -1957,6 +2020,7 @@
             // Force update global stats so "Today" timer updates in real-time with Pomo contribution
             updateTimeStats(); 
         }
+
 
         function updatePomoDisplay() {
             const totalSeconds = Math.ceil(pomoTimeLeft / 1000);
@@ -3700,57 +3764,56 @@
 
         function loadTasks() {
             if (useFirebase && currentUserId && !isGuest) {
+                // --- NEW: Start listening for mode changes immediately ---
+                setupModeListeners(); 
+
                 dbRef = firebase.database().ref('users/' + currentUserId + '/tasks');
-                
                 dbRef.on('value', snap => {
                     const newTasks = snap.val() || {};
                     
-                    // --- FIX START: Smart Render Check ---
-                    // If we are in conveyor mode, checking if the update is just a timer tick
+                    // --- SMART RENDER CHECK (Prevents Conveyor Jumps) ---
+                    // If we are using a conveyor belt, check if the update is just a timer tick
                     if (displayMode !== 'static' && !hasStructuralChanges(tasks, newTasks)) {
-                        // Update the data in memory so the animation loop picks up the new numbers
+                        // Update data in memory so timers flow correctly
                         tasks = newTasks;
-                        
-                        // Force streak data update just in case, but SKIP renderTasks()
-                        updateStreakData(); 
+                        // Update streak data silently
+                        updateStreakData();
+                        // STOP HERE: Do not re-render the DOM, do not reset conveyor position
                         return; 
                     }
-                    // --- FIX END ---
+                    // ----------------------------------------------------
 
                     tasks = newTasks;
                     
-                    // Load streak data first, then display mode, then render tasks
+                    // Initialize app state
                     loadStreakData(() => {
+                        // We only load displayMode ONCE locally for initial setup
+                        // The 'setupModeListeners' function handles real-time updates now
                         loadDisplayMode(() => {
                             renderTasks();
-                            // Update streak data with current tasks
                             updateStreakData();
                         });
                     });
                 });
             } else {
-                // LocalStorage logic (Existing code)
+                // LocalStorage / Guest Logic (Unchanged)
                 const storedTasks = localStorage.getItem('obs_todo_tasks');
                 tasks = storedTasks ? JSON.parse(storedTasks) : {};
                 
+                // Cleanup guest tasks
                 if (isGuest) {
                     const today = new Date().toDateString();
                     let hasChanges = false;
-                    
                     Object.keys(tasks).forEach(taskId => {
                         const task = tasks[taskId];
                         if (task.completed && task.completedAt) {
-                            const completedDate = new Date(task.completedAt).toDateString();
-                            if (completedDate !== today) {
+                            if (new Date(task.completedAt).toDateString() !== today) {
                                 delete tasks[taskId];
                                 hasChanges = true;
                             }
                         }
                     });
-                    
-                    if (hasChanges) {
-                        saveAllTasks();
-                    }
+                    if (hasChanges) saveAllTasks();
                 }
                 
                 loadStreakData(() => {
