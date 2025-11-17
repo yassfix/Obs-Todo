@@ -1826,6 +1826,8 @@
         let pomoTimeLeft = 25 * 60 * 1000; // ms
         let pomoAccumulatedContribution = 0; // Seconds tracked for stats
         let lastPomoTick = 0;
+        let pomoEndTime = null;
+
         const alarmSound = document.getElementById('pomo-alarm');
 
         // --- POMODORO LOGIC ---
@@ -1886,9 +1888,7 @@
                     pomoTimeLeft = pomoDurationMins * 60 * 1000;
                     pomoAccumulatedContribution = 0;
                 } else {
-                    // Resuming (could be work or break)
-                    // We check the label to guess previous state or simply rely on leftover time
-                    // Simple logic: If label said Break, we resume break.
+                    // Resuming
                     if (label.textContent.includes('Break')) {
                         pomoState = 'BREAK';
                     } else {
@@ -1896,6 +1896,9 @@
                     }
                 }
                 
+                // --- NEW: Set the absolute End Time based on current time + remaining time ---
+                pomoEndTime = Date.now() + pomoTimeLeft; 
+
                 btn.textContent = '❚❚';
                 label.textContent = (pomoState === 'WORK') ? 'Focusing...' : 'Break Time';
                 
@@ -1905,16 +1908,30 @@
             } else {
                 // PAUSE
                 pomoState = 'PAUSED';
+                
+                // --- NEW: Clear the End Time so we don't keep counting while paused ---
+                pomoEndTime = null;
+
                 btn.textContent = '▶';
                 label.textContent = (label.textContent.includes('Break')) ? 'Break Paused' : 'Work Paused';
+                
+                // Optional: We can try to stop the loop here if no other timers are running to save resources
+                // But leaving it running is safer to prevent bugs.
             }
-        }
+}
 
-        function updatePomodoro(deltaTime) {
+       function updatePomodoro(deltaTime) {
             if (!isPomodoroMode) return;
             if (pomoState !== 'WORK' && pomoState !== 'BREAK') return;
 
-            pomoTimeLeft -= deltaTime;
+            // --- NEW: Calculate time based on absolute timestamp ---
+            if (pomoEndTime) {
+                const now = Date.now();
+                pomoTimeLeft = pomoEndTime - now;
+            } else {
+                // Fallback (shouldn't usually happen if toggle sets endTime correctly)
+                pomoTimeLeft -= deltaTime; 
+            }
 
             // --- SMART TIME TRACKING LOGIC ---
             // Only accumulate "Pomo Time" if NO other tasks are running
@@ -1929,6 +1946,7 @@
             // Check for completion
             if (pomoTimeLeft <= 0) {
                 pomoTimeLeft = 0;
+                pomoEndTime = null; // Clear the target time
                 completePomodoroPhase();
             }
 
@@ -3778,7 +3796,7 @@
 
     function stopConveyor() {
         // Only stop master loop if no timers are running
-        if (Object.keys(timerIntervals).length === 0) {
+        if (Object.keys(timerIntervals).length === 0 && pomoState !== 'WORK' && pomoState !== 'BREAK') {
             stopMasterLoop();
         }
         
