@@ -1773,7 +1773,6 @@
 
         // App state
         let tasks = {};
-        let listenersInitialized = false;
         let dbRef = null;
         let currentTab = 'active'; 
         let completedDaysRange = 1; 
@@ -1837,20 +1836,27 @@
 
 
         function setupModeListeners() {
-            if (!useFirebase || !currentUserId || isGuest || listenersInitialized) return;
+            if (!useFirebase || !currentUserId || isGuest) return;
 
-            listenersInitialized = true; 
-
-            // 1. Display Mode Listener (Existing)
+            // 1. Listen for Display Mode Changes (Static, Loop, etc.)
             firebase.database().ref('users/' + currentUserId + '/displayMode').on('value', snap => {
                 const newMode = snap.val();
+                // Only act if the mode is actually different from what we have
                 if (newMode && newMode !== displayMode) {
                     console.log("Remote display mode change detected:", newMode);
                     displayMode = newMode;
+                    
+                    // Update the Radio Button UI
                     const radio = document.getElementById(`mode-${displayMode}`);
                     if (radio) radio.checked = true;
+                    
+                    // Update Text Description
                     updateModeDescription();
+                    
+                    // Reset/Restart Conveyor Logic
                     stopConveyor();
+                    
+                    // Reset conveyor logic based on new mode
                     if (displayMode !== 'static' && currentTab === 'active') {
                         initConveyor();
                     } else {
@@ -1858,38 +1864,25 @@
                         conveyorTrack.style.transform = 'translateY(0)';
                         renderTasks();
                     }
+                    
+                    // Trigger OBS refresh
                     triggerObsRefresh();
                 }
             });
 
-            // 2. Minimal Mode Listener (Existing)
+            // 2. Listen for Minimal Mode Changes
             firebase.database().ref('users/' + currentUserId + '/minimalMode').on('value', snap => {
                 const newMinimal = snap.val();
+                // Only act if changed
                 if (newMinimal !== null && newMinimal !== minimalMode) {
                     console.log("Remote minimal mode change detected:", newMinimal);
                     minimalMode = newMinimal;
+                    
+                    // Update UI
                     const radio = document.getElementById(`mode-${minimalMode ? 'minimal' : 'normal'}`);
                     if (radio) radio.checked = true;
+                    
                     applyMinimalMode();
-                }
-            });
-
-            // 3. --- NEW: Timer Mode Listener (Standard vs Pomodoro) ---
-            firebase.database().ref('users/' + currentUserId + '/timerMode').on('value', snap => {
-                const newTimerMode = snap.val(); // 'normal' or 'pomodoro'
-                
-                // Check against current state to avoid loops
-                const currentModeStr = isPomodoroMode ? 'pomodoro' : 'normal';
-
-                if (newTimerMode && newTimerMode !== currentModeStr) {
-                    console.log("Remote timer mode change detected:", newTimerMode);
-
-                    // Update the Radio Button UI
-                    const radio = document.getElementById(`timer-mode-${newTimerMode}`);
-                    if (radio) radio.checked = true;
-
-                    // Apply the logic (visual switch)
-                    applyTimerMode(newTimerMode);
                 }
             });
         }
@@ -1905,21 +1898,8 @@
 
         // --- POMODORO LOGIC ---
 
-        
-
-        // --- UPDATED: Triggered when you click the radio button ---
         function handleTimerModeChange() {
             const mode = document.querySelector('input[name="timer-mode"]:checked').value;
-            
-            // 1. Apply visual changes immediately for responsiveness
-            applyTimerMode(mode);
-            
-            // 2. Save to Firebase (which triggers remote devices) or LocalStorage
-            saveTimerMode(mode);
-        }
-
-        // --- NEW: Applies the visual changes (Used by both Click & Listener) ---
-        function applyTimerMode(mode) {
             isPomodoroMode = (mode === 'pomodoro');
 
             const normalContainer = document.getElementById('normal-timer-container');
@@ -1931,52 +1911,12 @@
             } else {
                 normalContainer.style.display = 'flex';
                 pomoContainer.style.display = 'none';
-                
                 // Optional: Pause pomodoro if switching away
-                if (typeof pomoState !== 'undefined' && (pomoState === 'WORK' || pomoState === 'BREAK')) {
+                if (pomoState === 'WORK' || pomoState === 'BREAK') {
                     togglePomodoroAction(); 
                 }
             }
         }
-
-        // --- NEW: Saves the choice to Database or Storage ---
-        function saveTimerMode(mode) {
-            if (useFirebase && currentUserId && !isGuest) {
-                firebase.database().ref('users/' + currentUserId + '/timerMode').set(mode);
-            } else {
-                localStorage.setItem('obs_todo_timerMode', mode);
-            }
-        }
-
-        // --- NEW: Loads initial state on startup ---
-        function loadTimerMode(callback) {
-            if (useFirebase && currentUserId && !isGuest) {
-                // For Firebase, the listener in setupModeListeners handles the real-time sync.
-                // We just callback immediately to continue the chain.
-                if (callback) callback();
-            } else {
-                // For LocalStorage/Guest
-                const storedMode = localStorage.getItem('obs_todo_timerMode');
-                if (storedMode) {
-                    // Update UI Radio
-                    const radio = document.getElementById(`timer-mode-${storedMode}`);
-                    if (radio) radio.checked = true;
-                    // Apply Logic
-                    applyTimerMode(storedMode);
-                }
-                if (callback) callback();
-            }
-        }
-
-
-
-
-
-
-
-
-
-
 
         function selectPomoDuration(mins) {
             if (pomoState === 'WORK' || pomoState === 'BREAK') return; // Lock while running
@@ -3850,10 +3790,8 @@
                         // We only load displayMode ONCE locally for initial setup
                         // The 'setupModeListeners' function handles real-time updates now
                         loadDisplayMode(() => {
-                            loadTimerMode(() => {
                             renderTasks();
                             updateStreakData();
-                        })
                         });
                     });
                 });
@@ -3880,12 +3818,9 @@
                 
                 loadStreakData(() => {
                     loadDisplayMode(() => {
-                        loadTimerMode(() => {
                         renderTasks();
                         updateStreakData();
                     });
-                    });
-
                 });
             }
         }
@@ -4342,7 +4277,7 @@
             }
 
             listenersInitialized = false;
-
+            
             currentUser = null;
             currentUserId = null;
             isGuest = false;
