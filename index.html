@@ -3664,12 +3664,61 @@
                 localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
             }
         }
+        // Helper to detect if we really need to re-render the DOM
+        function hasStructuralChanges(oldTasks, newTasks) {
+            const oldKeys = Object.keys(oldTasks || {});
+            const newKeys = Object.keys(newTasks || {});
+
+            // 1. Different number of tasks?
+            if (oldKeys.length !== newKeys.length) return true;
+
+            // 2. Check content of each task
+            for (let key of newKeys) {
+                const oldT = oldTasks[key];
+                const newT = newTasks[key];
+
+                // If task didn't exist before
+                if (!oldT) return true; 
+
+                // Check properties that affect the VISUAL layout (Order, Text, Completion, Keywords)
+                if (oldT.text !== newT.text) return true;
+                if (oldT.completed !== newT.completed) return true;
+                if (oldT.order !== newT.order) return true;
+                
+                // Check keywords array comparison
+                const oldK = JSON.stringify(oldT.keywords || []);
+                const newK = JSON.stringify(newT.keywords || []);
+                if (oldK !== newK) return true;
+            }
+
+            // If we get here, only 'timeSpent', 'lastUpdated', or 'timerStartTime' changed.
+            // These don't require a full DOM destroy/rebuild.
+            return false;
+        }
+
+        
 
         function loadTasks() {
             if (useFirebase && currentUserId && !isGuest) {
                 dbRef = firebase.database().ref('users/' + currentUserId + '/tasks');
+                
                 dbRef.on('value', snap => {
-                    tasks = snap.val() || {};
+                    const newTasks = snap.val() || {};
+                    
+                    // --- FIX START: Smart Render Check ---
+                    // If we are in conveyor mode, checking if the update is just a timer tick
+                    if (displayMode !== 'static' && !hasStructuralChanges(tasks, newTasks)) {
+                        // Update the data in memory so the animation loop picks up the new numbers
+                        tasks = newTasks;
+                        
+                        // Force streak data update just in case, but SKIP renderTasks()
+                        updateStreakData(); 
+                        return; 
+                    }
+                    // --- FIX END ---
+
+                    tasks = newTasks;
+                    
                     // Load streak data first, then display mode, then render tasks
                     loadStreakData(() => {
                         loadDisplayMode(() => {
@@ -3680,10 +3729,10 @@
                     });
                 });
             } else {
+                // LocalStorage logic (Existing code)
                 const storedTasks = localStorage.getItem('obs_todo_tasks');
                 tasks = storedTasks ? JSON.parse(storedTasks) : {};
                 
-                // For guest mode: clean up completed tasks from previous days
                 if (isGuest) {
                     const today = new Date().toDateString();
                     let hasChanges = false;
@@ -3704,16 +3753,16 @@
                     }
                 }
                 
-                // Load streak data first, then display mode, then render tasks
                 loadStreakData(() => {
                     loadDisplayMode(() => {
                         renderTasks();
-                        // Update streak data with current tasks
                         updateStreakData();
                     });
                 });
             }
         }
+
+
 
         // Display Mode Functions - CONVEYOR BELT IMPLEMENTATION
         function handleDisplayModeChange() {
