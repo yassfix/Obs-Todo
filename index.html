@@ -3668,7 +3668,7 @@
                     text: text,
                     completed: false,
                     createdAt: new Date().toISOString(),
-                    order: activeTasks.length, // Set order to be the last one
+                    order: activeTasks.length,
                     timeSpent: 0,
                     timerStartTime: null,
                     lastUpdated: new Date().toISOString(),
@@ -3685,6 +3685,9 @@
                 
                 inputEl.value = '';
             }
+            
+            // Prevent default form submission behavior
+            return false;
         }
 
         function toggleTask(taskId) {
@@ -4437,9 +4440,13 @@
         }
 
         // Event listeners
-        addBtn.addEventListener('click', addTask);
+        addBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent any default behavior
+            addTask();
+        });
         inputEl.addEventListener('keypress', e => {
             if (e.key === 'Enter') {
+                e.preventDefault(); // Add this line to prevent form submission
                 addTask();
             }
         });
