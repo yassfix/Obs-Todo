@@ -2718,17 +2718,29 @@
         }
 
         function loadKeywords() {
+            // 1. Check if we have a user
             if (useFirebase && currentUserId && !isGuest) {
                 firebase.database().ref('users/' + currentUserId + '/keywords').once('value').then(snap => {
                     const storedKeywords = snap.val();
-                    if (storedKeywords && storedKeywords.length > 0) {
+                    
+                    // 2. If we found keywords in the database, use them
+                    if (storedKeywords) {
                         keywords = storedKeywords;
+                        
+                        // 3. IMPORTANT: Force the UI to update immediately!
+                        renderTasks();
+                        // Also update the manager if it's open
+                        if (document.getElementById('keyword-management').classList.contains('visible')) {
+                            renderKeywordManager();
+                        }
                     }
                 });
             } else {
+                // LocalStorage logic for Guest/Offline
                 const stored = localStorage.getItem('obs_todo_keywords');
                 if (stored) {
                     keywords = JSON.parse(stored);
+                    renderTasks(); // Force update
                 }
             }
         }
@@ -4428,6 +4440,7 @@
                         isGuest = false;
                         showDashboard();
                         loadTasks();
+                        loadKeywords(); 
                     } else {
                         showLogin();
                     }
@@ -4441,6 +4454,7 @@
                     isGuest = false;
                     showDashboard();
                     loadTasks();
+                    loadKeywords();
                 } else {
                     showLogin();
                 }
@@ -4780,7 +4794,6 @@
 
         
         // Initial load
-        loadKeywords();
         initializeAuth(); // Initialize authentication instead of directly loading tasks
     </script>
 </body>
