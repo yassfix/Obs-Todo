@@ -1269,12 +1269,7 @@
     }
 
     /* Ensure canvas fills the remaining height after title/controls */
-    .chart-container canvas {
-        flex-grow: 1;
-        width: 100% !important;
-        height: auto !important;
-        min-height: 0; /* Important for flex containers */
-    }
+    
 
     /* --- 3. BUTTON FIX: Override big cards to look like simple buttons --- */
 
@@ -1328,6 +1323,13 @@
         background-color: rgba(255, 255, 255, 0.15);
         border-color: var(--primary-light);
     }
+
+    .chart-container canvas {
+        flex-grow: 1;
+        /* Removed fixed width/height allows Chart.js to handle the aspect ratio */
+        min-height: 0; 
+        max-width: 100%;
+    }
         
 
     </style>
@@ -1359,6 +1361,7 @@
         </div>
         
         <div>
+            <div id="auth-error-msg" style="color: #e17055; text-align: center; margin-bottom: 15px; font-size: 0.9rem;"></div>
             <h3 style="color: var(--primary); margin-bottom: 15px;">Guest Mode</h3>
             <p style="color: var(--primary-light); font-size: 0.9rem; margin-bottom: 15px;">
                 Use the app without an account. Your completed tasks will be deleted the next day.
@@ -2556,16 +2559,16 @@
             });
         }
 
-        // Task removal function
+
+         // Task removal function
         function removeTask(taskId) {
-            if (confirm('Are you sure you want to remove this task?')) {
-                if (useFirebase && !isGuest) {
-                    dbRef.child(taskId).remove();
-                } else {
-                    delete tasks[taskId];
-                    saveAllTasks();
-                    renderTasks();
-                }
+            // OBS FIX: Removed the confirm() check because OBS blocks popups
+            if (useFirebase && !isGuest) {
+                dbRef.child(taskId).remove();
+            } else {
+                delete tasks[taskId];
+                saveAllTasks();
+                renderTasks();
             }
         }
         
@@ -2849,26 +2852,25 @@
         function removeKeyword(index) {
             const keywordToRemove = keywords[index];
             
-            if (confirm(`Are you sure you want to remove the keyword "${keywordToRemove}"? This will remove it from all tasks.`)) {
-                keywords.splice(index, 1);
-                
-                Object.keys(tasks).forEach(taskId => {
-                    const task = tasks[taskId];
-                    if (task.keywords && task.keywords.includes(keywordToRemove)) {
-                        const keywordIndex = task.keywords.indexOf(keywordToRemove);
-                        task.keywords.splice(keywordIndex, 1);
-                        
-                        if (useFirebase && !isGuest) {
-                            dbRef.child(taskId).update({ keywords: task.keywords });
-                        }
+            // OBS FIX: Removed the confirm() check because OBS blocks popups
+            keywords.splice(index, 1);
+            
+            Object.keys(tasks).forEach(taskId => {
+                const task = tasks[taskId];
+                if (task.keywords && task.keywords.includes(keywordToRemove)) {
+                    const keywordIndex = task.keywords.indexOf(keywordToRemove);
+                    task.keywords.splice(keywordIndex, 1);
+                    
+                    if (useFirebase && !isGuest) {
+                        dbRef.child(taskId).update({ keywords: task.keywords });
                     }
-                });
-                
-                saveKeywords();
-                saveAllTasks();
-                renderKeywordManager();
-                renderTasks();
-            }
+                }
+            });
+            
+            saveKeywords();
+            saveAllTasks();
+            renderKeywordManager();
+            renderTasks();
         }
 
         // Toggle task details visibility
@@ -3505,7 +3507,7 @@
                 }
             });
 
-            // --- 5. Time Spent Per Keyword Chart  ---
+            // --- 5. Time Spent Per Keyword Chart (UPDATED) ---
             const timePerKeyword = {};
             completedTasks.forEach(task => {
                 const time = task.timeSpent || 0;
@@ -3534,26 +3536,38 @@
             if (timePerKeywordChart) {
                 timePerKeywordChart.destroy();
             }
+            
             timePerKeywordChart = new Chart(ctxKeywords, {
-                type: 'pie',
+                type: 'doughnut', // Changed to 'doughnut' for a more modern look (optional, change back to 'pie' if you prefer)
                 data: {
                     labels: pieLabels,
                     datasets: [{
                         label: 'Time Spent (in minutes)',
                         data: pieData,
                         backgroundColor: backgroundColors,
-                        borderColor: 'var(--background)',
-                        borderWidth: 2
+                        borderColor: 'rgba(0,0,0,0.5)', // Dark border to blend with background
+                        borderWidth: 2,
+                        hoverOffset: 10
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
+                    maintainAspectRatio: false, // Allows it to fit the container height
+                    layout: {
+                        padding: 20
+                    },
                     plugins: {
                         legend: {
-                            position: 'top',
+                            position: 'right', // Moves indicators to the right side (Vertical List)
+                            align: 'center',   // Centers them vertically
                             labels: {
-                                color: 'var(--text)'
+                                color: 'rgb(223, 230, 233)', // var(--text)
+                                padding: 20,      // Adds spacing between rows
+                                boxWidth: 15,     // Makes the color boxes smaller and neater
+                                font: {
+                                    size: 12,
+                                    family: "'Segoe UI', sans-serif"
+                                }
                             }
                         },
                         tooltip: {
@@ -4330,7 +4344,8 @@
                         loadTasks(); // Load user-specific tasks
                     })
                     .catch((error) => {
-                        alert('Signup error: ' + error.message);
+                        const errorDiv = document.getElementById('auth-error-msg');
+                        if(errorDiv) errorDiv.textContent = 'Signup error: ' + error.message;
                     });
             } else {
                 // Mock authentication for localStorage mode
@@ -4358,7 +4373,8 @@
                         loadTasks(); // Load user-specific tasks
                     })
                     .catch((error) => {
-                        alert('Login error: ' + error.message);
+                        const errorDiv = document.getElementById('auth-error-msg');
+                        if(errorDiv) errorDiv.textContent = 'Login error: ' + error.message;
                     });
             } else {
                 // Mock authentication for localStorage mode
