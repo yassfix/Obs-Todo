@@ -3447,16 +3447,16 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { color: 'var(--text)' },
+                            ticks: { color: '#dfe6e9' }, // FIXED: Hardcoded color
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         },
                         x: {
-                            ticks: { color: 'var(--text)' },
+                            ticks: { color: '#dfe6e9' }, // FIXED: Hardcoded color
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: 'var(--text)' } }
+                        legend: { labels: { color: '#dfe6e9' } } // FIXED: Legend text
                     }
                 }
             });
@@ -3486,16 +3486,19 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { color: 'var(--text)', callback: (val) => val + 'h' },
+                            ticks: { 
+                                color: '#dfe6e9', // FIXED
+                                callback: (val) => val + 'h' 
+                            },
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         },
                         x: {
-                            ticks: { color: 'var(--text)' },
+                            ticks: { color: '#dfe6e9' }, // FIXED
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: 'var(--text)' } },
+                        legend: { labels: { color: '#dfe6e9' } }, // FIXED
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
@@ -3694,18 +3697,18 @@
                         y: {
                             beginAtZero: true,
                             ticks: { 
-                                color: 'var(--text)',
+                                color: '#dfe6e9', // FIXED
                                 callback: (val) => val + yAxisLabel
                             },
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         },
                         x: {
-                            ticks: { color: 'var(--text)' },
+                            ticks: { color: '#dfe6e9' }, // FIXED
                             grid: { color: 'rgba(255,255,255,0.1)' }
                         }
                     },
                     plugins: {
-                        legend: { labels: { color: 'var(--text)' } },
+                        legend: { labels: { color: '#dfe6e9' } }, // FIXED
                         tooltip: {
                             callbacks: {
                                 label: function(context) {
