@@ -1467,14 +1467,22 @@
                 <p id="no-more-tasks-msg" style="display: none; text-align: center; color: var(--primary-light); margin-top: 10px;">No more completed tasks found.</p>
             
                 
-                <div class="new-task">
+                <div class="new-task" id="active-task-input-container">
                     <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
                     <button class="new-task-button" id="add-task-btn">Add</button>
                 </div>
-                <button class="manage-keywords-btn" id="manage-keywords-btn">Manage Keywords</button>
-                <div class="stats">
-                    <span id="completed-count">0 of 0 completed today</span>
-                    <span id="remaining-count">0 tasks remaining</span>
+
+                <div class="new-task" id="completed-task-input-container" style="display: none; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border: 1px dashed var(--secondary);">
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" class="new-task-input" placeholder="What did you finish offline?" id="offline-task-text">
+                        <input type="text" class="new-task-input" style="max-width: 130px;" placeholder="Time (e.g. 1h 20m)" id="offline-task-time">
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <select id="offline-task-keyword" class="new-task-input" style="flex-grow: 1; cursor: pointer;">
+                            <option value="">Select Keyword (Optional)</option>
+                            </select>
+                        <button class="new-task-button" id="add-offline-btn" style="background-color: var(--secondary);">Add Completed</button>
+                    </div>
                 </div>
 
 
@@ -4593,67 +4601,62 @@
         toggleUserStatusBtn.addEventListener('click', toggleUserStatus);
 
        // --- Tab switching logic ---
+        
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
                 tab.classList.add('active');
                 
                 const selectedTab = tab.dataset.tab;
-                editingTaskId = null; // Cancel editing when switching tabs
+                editingTaskId = null;
 
-                // Hide button and message by default
+                // Toggle visibility of input fields
+                const activeInput = document.getElementById('active-task-input-container');
+                const completedInput = document.getElementById('completed-task-input-container');
+
+                if (selectedTab === 'active') {
+                    activeInput.style.display = 'flex';
+                    completedInput.style.display = 'none';
+                } else if (selectedTab === 'completed') {
+                    activeInput.style.display = 'none';
+                    completedInput.style.display = 'flex';
+                    populateOfflineKeywords(); // Fill the dropdown with your keywords
+                } else {
+                    activeInput.style.display = 'none';
+                    completedInput.style.display = 'none';
+                }
+
+                // --- Existing Tab Logic ---
                 loadMoreBtn.style.display = 'none';
                 noMoreTasksMsg.style.display = 'none';
 
                 if (selectedTab === 'active' || selectedTab === 'completed') {
-                    // Show tasks, hide reporting
                     taskContentWrapper.style.display = 'block';
                     reportingContentWrapper.style.display = 'none';
-                    
-                    // Set the task list tab
                     currentTab = selectedTab;
                     
-                    //  logic for 'completed' tab
                     if (currentTab === 'completed') {
-                        // Reset to "today" when first clicking tab
                         completedDaysRange = 1; 
                         stopConveyor();
-                        
-                        // Check if we should show the "Load More" button
                         const cutoffDate = new Date();
-                        cutoffDate.setHours(0, 0, 0, 0); // Start of today
+                        cutoffDate.setHours(0, 0, 0, 0);
                         const hasMoreTasks = Object.values(tasks).some(task => {
                             if (!task.completed || !task.completedAt) return false;
-                            const completedDate = new Date(task.completedAt);
-                            return completedDate < cutoffDate; // Any task completed *before* today
+                            return new Date(task.completedAt) < cutoffDate;
                         });
-                        
-                        // Show the button if tasks older than today exist
-                        if (hasMoreTasks) {
-                            loadMoreBtn.style.display = 'block';
-                        }
-                        
+                        if (hasMoreTasks) loadMoreBtn.style.display = 'block';
                     } else if (displayMode !== 'static') {
-                        // This is the 'active' tab
                         initConveyor();
                     }
-                    
                     renderTasks();
-                    
                 } else if (selectedTab === 'reporting') {
-                    // Hide tasks, show reporting
                     taskContentWrapper.style.display = 'none';
                     reportingContentWrapper.style.display = 'block';
-                    
-                    // Stop conveyor
                     stopConveyor();
-                    
-                    // Render the reports
                     renderReports();
                 }
             });
         });
-
         function loadMoreCompletedTasks() {
             // Add 30 more days to the range
             completedDaysRange += 30;
@@ -4795,6 +4798,82 @@
         
         // Initial load
         initializeAuth(); // Initialize authentication instead of directly loading tasks
+
+        // Populates the dropdown menu with your "Managed Keywords"
+        function populateOfflineKeywords() {
+            const dropdown = document.getElementById('offline-task-keyword');
+            const currentValue = dropdown.value;
+            dropdown.innerHTML = '<option value="">Select Keyword (Optional)</option>';
+            keywords.forEach(kw => {
+                const option = document.createElement('option');
+                option.value = kw;
+                option.textContent = kw;
+                dropdown.appendChild(option);
+            });
+            dropdown.value = currentValue;
+        }
+
+        // Converts "1h 30m" or "45m" into total seconds
+        function parseTimeString(str) {
+            let totalSeconds = 0;
+            const hours = str.match(/(\d+)\s*h/);
+            const mins = str.match(/(\d+)\s*m/);
+            const secs = str.match(/(\d+)\s*s/);
+            if (hours) totalSeconds += parseInt(hours[1]) * 3600;
+            if (mins) totalSeconds += parseInt(mins[1]) * 60;
+            if (secs) totalSeconds += parseInt(secs[1]);
+            
+            // If user just types a number, assume it's minutes
+            if (!hours && !mins && !secs && !isNaN(str) && str !== "") {
+                totalSeconds = parseInt(str) * 60;
+            }
+            return totalSeconds;
+        }
+
+        // Saves the offline data to Firebase/LocalStorage
+        function addOfflineTask() {
+            const textEl = document.getElementById('offline-task-text');
+            const timeEl = document.getElementById('offline-task-time');
+            const kwEl = document.getElementById('offline-task-keyword');
+            
+            const text = textEl.value.trim();
+            if (!text) return;
+
+            const seconds = parseTimeString(timeEl.value.trim());
+            const newTaskId = useFirebase && !isGuest ? dbRef.push().key : `offline-${Date.now()}`;
+
+            const newTask = {
+                text: text,
+                completed: true,
+                completedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                order: 0,
+                timeSpent: seconds,
+                timerStartTime: null,
+                lastUpdated: new Date().toISOString(),
+                keywords: kwEl.value ? [kwEl.value] : []
+            };
+
+            if (useFirebase && !isGuest) {
+                dbRef.child(newTaskId).set(newTask);
+            } else {
+                tasks[newTaskId] = newTask;
+                saveAllTasks();
+                renderTasks();
+            }
+
+            // Clear fields
+            textEl.value = '';
+            timeEl.value = '';
+            kwEl.value = '';
+            updateStreakData();
+        }
+
+        // Link the button click and Enter key
+        document.getElementById('add-offline-btn').addEventListener('click', addOfflineTask);
+        document.getElementById('offline-task-time').addEventListener('keypress', e => {
+            if (e.key === 'Enter') addOfflineTask();
+        });
     </script>
 </body>
 </html>
