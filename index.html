@@ -1686,7 +1686,7 @@
                                 <label for="metric-time">Time Spent</label>
                             </div>
                             <div class="mode-option">
-                                <input type="radio" id="metric-tasks" name="daily-progress-metric" value="tasks" checked>>
+                                <input type="radio" id="metric-tasks" name="daily-progress-metric" value="tasks" checked>
                                 <label for="metric-tasks">Tasks Completed</label>
                             </div>
                         </div>
@@ -4601,7 +4601,6 @@
         toggleUserStatusBtn.addEventListener('click', toggleUserStatus);
 
        // --- Tab switching logic ---
-        
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
@@ -4626,7 +4625,7 @@
                     completedInput.style.display = 'none';
                 }
 
-                // --- Existing Tab Logic ---
+                // Reset pagination and messages
                 loadMoreBtn.style.display = 'none';
                 noMoreTasksMsg.style.display = 'none';
 
@@ -4657,6 +4656,7 @@
                 }
             });
         });
+        
         function loadMoreCompletedTasks() {
             // Add 30 more days to the range
             completedDaysRange += 30;
@@ -4769,37 +4769,28 @@
             // Load minimal mode state
             loadMinimalMode();
         });
-
-        // --- Event listeners for Daily Progress Chart filters ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const progressFilters = document.querySelectorAll('input[name="daily-progress-metric"], input[name="daily-progress-range"]');
-            progressFilters.forEach(radio => {
-                radio.addEventListener('change', () => {
-                    // Only update if the reporting tab is active
-                    if (document.querySelector('.tab[data-tab="reporting"]').classList.contains('active')) {
-                        updateDailyProgressChart();
-                    }
-                });
+        // Load initial settings
+        document.addEventListener('DOMContentLoaded', function() {
+            const minimalModeRadios = document.querySelectorAll('input[name="minimal-mode"]');
+            minimalModeRadios.forEach(radio => {
+                radio.addEventListener('change', toggleMinimalMode);
             });
+            loadMinimalMode();
         });
 
-        // Save data when the user closes the window or refreshes
+        // Save data when the user closes the window
         window.addEventListener('beforeunload', () => {
-            // Loop through all running timers and save them
             Object.keys(timerIntervals).forEach(taskId => {
                 if (tasks[taskId]) {
-                    // Ensure the latest time is captured
                     updateTaskInStorage(taskId);
                 }
             });
         });
-            
 
-        
-        // Initial load
-        initializeAuth(); // Initialize authentication instead of directly loading tasks
+        // Initialize authentication
+        initializeAuth();
 
-        // Populates the dropdown menu with your "Managed Keywords"
+        // --- OFFLINE TASK HELPERS ---
         function populateOfflineKeywords() {
             const dropdown = document.getElementById('offline-task-keyword');
             const currentValue = dropdown.value;
@@ -4813,7 +4804,6 @@
             dropdown.value = currentValue;
         }
 
-        // Converts "1h 30m" or "45m" into total seconds
         function parseTimeString(str) {
             let totalSeconds = 0;
             const hours = str.match(/(\d+)\s*h/);
@@ -4823,14 +4813,12 @@
             if (mins) totalSeconds += parseInt(mins[1]) * 60;
             if (secs) totalSeconds += parseInt(secs[1]);
             
-            // If user just types a number, assume it's minutes
             if (!hours && !mins && !secs && !isNaN(str) && str !== "") {
                 totalSeconds = parseInt(str) * 60;
             }
             return totalSeconds;
         }
 
-        // Saves the offline data to Firebase/LocalStorage
         function addOfflineTask() {
             const textEl = document.getElementById('offline-task-text');
             const timeEl = document.getElementById('offline-task-time');
@@ -4855,25 +4843,28 @@
             };
 
             if (useFirebase && !isGuest) {
-                dbRef.child(newTaskId).set(newTask);
+                dbRef.child(newTaskId).set(newTask).then(() => {
+                    renderTasks();
+                });
             } else {
                 tasks[newTaskId] = newTask;
                 saveAllTasks();
                 renderTasks();
             }
 
-            // Clear fields
             textEl.value = '';
             timeEl.value = '';
             kwEl.value = '';
             updateStreakData();
         }
 
-        // Link the button click and Enter key
+        // Event Listeners for Offline Tasks
         document.getElementById('add-offline-btn').addEventListener('click', addOfflineTask);
         document.getElementById('offline-task-time').addEventListener('keypress', e => {
             if (e.key === 'Enter') addOfflineTask();
         });
+
     </script>
 </body>
 </html>
+      
