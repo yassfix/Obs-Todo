@@ -1463,37 +1463,52 @@
                         </div>
                     </div>
                 </div>
+                
                 <button id="load-more-btn" style="display: none; width: 100%; margin: 10px 0;" class="new-task-button">Load Past 30 Days</button>
                 <p id="no-more-tasks-msg" style="display: none; text-align: center; color: var(--primary-light); margin-top: 10px;">No more completed tasks found.</p>
-            
-                
-                <div class="new-task">
+
+            <div id="active-task-form" class="new-task" style="flex-direction: column; gap: 10px;">
+                <div style="display: flex; gap: 8px; width: 100%;">
                     <input type="text" class="new-task-input" placeholder="Add a new task..." id="new-task-input">
                     <button class="new-task-button" id="add-task-btn">Add</button>
                 </div>
-                <button class="manage-keywords-btn" id="manage-keywords-btn">Manage Keywords</button>
-                <div class="stats">
-                    <span id="completed-count">0 of 0 completed today</span>
-                    <span id="remaining-count">0 tasks remaining</span>
+                <button class="manage-keywords-btn global-manage-btn" style="width: 100%; margin-top: 5px; background-color: var(--primary-light); color: var(--background);">
+                    Manage Keywords
+                </button>
+            </div>
+
+            <div id="completed-task-form" class="new-task" style="display: none; flex-direction: column; gap: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px;">
+                <h4 style="color: var(--secondary); font-size: 0.9rem;">Log Offline Completed Task</h4>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="new-task-input" placeholder="What did you finish?" id="offline-task-text">
+                    <input type="number" class="new-task-input" style="max-width: 100px;" placeholder="Mins" id="offline-task-mins">
                 </div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <select id="offline-task-keyword" class="new-task-input" style="background-color: #2d3436; flex-grow: 1;">
+                        <option value="">No Keyword</option>
+                    </select>
+                    <button class="new-task-button" style="background-color: var(--secondary);" onclick="addOfflineTask()">Log Task</button>
+                </div>
+                <button class="manage-keywords-btn global-manage-btn" style="width: 100%; margin-top: 5px; background-color: var(--primary-light); color: var(--background);">
+                    Manage Keywords
+                </button>
+            </div>
 
-
-
-                <div class="pomo-toggle-section">
-                    <h3>Timer Mode</h3>
-                    <div class="mode-selector">
-                        <div class="mode-option">
-                            <input type="radio" id="timer-mode-normal" name="timer-mode" value="normal" checked onchange="handleTimerModeChange()">
-                            <label for="timer-mode-normal">Standard (Count Up)</label>
-                        </div>
-                        <div class="mode-option">
-                            <input type="radio" id="timer-mode-pomodoro" name="timer-mode" value="pomodoro" onchange="handleTimerModeChange()">
-                            <label for="timer-mode-pomodoro">Pomodoro (Count Down)</label>
-                        </div>
+            <div class="pomo-toggle-section">
+                <h3>Timer Mode</h3>
+                <div class="mode-selector">
+                    <div class="mode-option">
+                        <input type="radio" id="timer-mode-normal" name="timer-mode" value="normal" checked onchange="handleTimerModeChange()">
+                        <label for="timer-mode-normal">Standard (Count Up)</label>
                     </div>
-                    <div class="mode-description">
-                        Switch between standard daily tracking or Pomodoro sessions.
+                    <div class="mode-option">
+                        <input type="radio" id="timer-mode-pomodoro" name="timer-mode" value="pomodoro" onchange="handleTimerModeChange()">
+                        <label for="timer-mode-pomodoro">Pomodoro (Count Down)</label>
                     </div>
+                </div>
+                <div class="mode-description">
+                    Switch between standard daily tracking or Pomodoro sessions.
+                </div>
                 </div>
 
                 <!-- Minimal Mode Toggle -->
@@ -4593,6 +4608,7 @@
         toggleUserStatusBtn.addEventListener('click', toggleUserStatus);
 
        // --- Tab switching logic ---
+        // --- Tab switching logic ---
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
@@ -4613,13 +4629,18 @@
                     // Set the task list tab
                     currentTab = selectedTab;
                     
-                    //  logic for 'completed' tab
+                    // --- NEW: Toggle between Active Adder and Offline Logger ---
                     if (currentTab === 'completed') {
-                        // Reset to "today" when first clicking tab
+                        // Show Offline Logger, Hide Active Adder
+                        document.getElementById('active-task-form').style.display = 'none';
+                        document.getElementById('completed-task-form').style.display = 'flex';
+                        updateOfflineKeywordDropdown(); // Refresh keywords in the dropdown
+
+                        // ORIGINAL LOGIC: logic for 'completed' tab
                         completedDaysRange = 1; 
                         stopConveyor();
                         
-                        // Check if we should show the "Load More" button
+                        // ORIGINAL LOGIC: Check if we should show the "Load More" button
                         const cutoffDate = new Date();
                         cutoffDate.setHours(0, 0, 0, 0); // Start of today
                         const hasMoreTasks = Object.values(tasks).some(task => {
@@ -4628,27 +4649,33 @@
                             return completedDate < cutoffDate; // Any task completed *before* today
                         });
                         
-                        // Show the button if tasks older than today exist
+                        // ORIGINAL LOGIC: Show the button if tasks older than today exist
                         if (hasMoreTasks) {
                             loadMoreBtn.style.display = 'block';
                         }
                         
-                    } else if (displayMode !== 'static') {
-                        // This is the 'active' tab
-                        initConveyor();
+                    } else {
+                        // It's the 'active' tab: Show Active Adder, Hide Offline Logger
+                        document.getElementById('active-task-form').style.display = 'flex';
+                        document.getElementById('completed-task-form').style.display = 'none';
+
+                        // ORIGINAL LOGIC: if displayMode isn't static
+                        if (displayMode !== 'static') {
+                            initConveyor();
+                        }
                     }
                     
                     renderTasks();
                     
                 } else if (selectedTab === 'reporting') {
-                    // Hide tasks, show reporting
+                    // ORIGINAL LOGIC: Hide tasks, show reporting
                     taskContentWrapper.style.display = 'none';
                     reportingContentWrapper.style.display = 'block';
                     
-                    // Stop conveyor
+                    // ORIGINAL LOGIC: Stop conveyor
                     stopConveyor();
                     
-                    // Render the reports
+                    // ORIGINAL LOGIC: Render the reports
                     renderReports();
                 }
             });
@@ -4684,26 +4711,37 @@
         // --- END OF NEW CODE BLOCK ---
 
         // Keyword management listeners
-        manageKeywordsBtn.addEventListener('click', showKeywordManagement);
 
-        // Keyword management listeners
-        manageKeywordsBtn.addEventListener('click', showKeywordManagement);
-        closeKeywordManagement.addEventListener('click', hideKeywordManagement);
-        addNewKeywordBtn.addEventListener('click', () => {
-            const newKeyword = newKeywordInput.value.trim();
-            if (newKeyword && !keywords.includes(newKeyword)) {
-                keywords.push(newKeyword);
-                saveKeywords();
-                renderKeywordManager();
-                renderTasks(); // Re-render tasks to show new keyword
-                newKeywordInput.value = '';
-            }
+       // --- Safe Event Listeners ---
+        // --- Safe Event Listeners for Keywords ---
+
+        // Handle all Manage Keywords buttons (found in both Active and Completed tabs)
+        const globalKeywordButtons = document.querySelectorAll('.global-manage-btn');
+        globalKeywordButtons.forEach(btn => {
+            btn.addEventListener('click', showKeywordManagement);
         });
-        newKeywordInput.addEventListener('keypress', e => {
-            if (e.key === 'Enter') {
-                addNewKeywordBtn.click();
-            }
-        });
+
+        if (closeKeywordManagement) {
+            closeKeywordManagement.addEventListener('click', hideKeywordManagement);
+        }
+
+        if (addNewKeywordBtn) {
+            addNewKeywordBtn.addEventListener('click', () => {
+                const newKeyword = newKeywordInput.value.trim();
+                if (newKeyword && !keywords.includes(newKeyword)) {
+                    keywords.push(newKeyword);
+                    saveKeywords();
+                    renderKeywordManager();
+                    renderTasks(); 
+                    newKeywordInput.value = '';
+                    
+                    // Sync the offline logger dropdown immediately if user is on Completed tab
+                    if (currentTab === 'completed') {
+                        updateOfflineKeywordDropdown();
+                    }
+                }
+            });
+        }
 
 
         
@@ -4793,6 +4831,59 @@
             
 
         
+        
+
+        function updateOfflineKeywordDropdown() {
+            const dropdown = document.getElementById('offline-task-keyword');
+            const currentVal = dropdown.value;
+            dropdown.innerHTML = '<option value="">No Keyword</option>';
+            
+            // Uses the global 'keywords' array from your app
+            keywords.forEach(kw => {
+                const option = document.createElement('option');
+                option.value = kw;
+                option.textContent = kw;
+                dropdown.appendChild(option);
+            });
+            dropdown.value = currentVal;
+        }
+
+        function addOfflineTask() {
+            const text = document.getElementById('offline-task-text').value.trim();
+            const mins = parseInt(document.getElementById('offline-task-mins').value) || 0;
+            const keyword = document.getElementById('offline-task-keyword').value;
+
+            if (!text) return;
+
+            // Use current ID generation logic
+            const newTaskId = useFirebase && !isGuest ? dbRef.push().key : `offline-${Date.now()}`;
+            
+            const newTask = {
+                text: text,
+                completed: true,
+                completedAt: new Date().toISOString(),
+                createdAt: new Date().toISOString(),
+                order: 0,
+                timeSpent: mins * 60, // Store as seconds
+                timerStartTime: null,
+                lastUpdated: new Date().toISOString(),
+                keywords: keyword ? [keyword] : []
+            };
+
+            if (useFirebase && !isGuest) {
+                dbRef.child(newTaskId).set(newTask);
+            } else {
+                tasks[newTaskId] = newTask;
+                saveAllTasks();
+                renderTasks();
+            }
+
+            // Reset fields
+            document.getElementById('offline-task-text').value = '';
+            document.getElementById('offline-task-mins').value = '';
+            updateStreakData();
+        }
+
         // Initial load
         initializeAuth(); // Initialize authentication instead of directly loading tasks
     </script>
