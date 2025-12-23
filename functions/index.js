@@ -31,7 +31,7 @@ exports.generateInsights = onCall(async (request) => {
   // 1. Initialize Gemini AI *inside* the handler
   // This allows it to access the geminiApiKey.value()
   const genAI = new GoogleGenerativeAI(geminiApiKey.value());
-  const model = genAI.getGenerativeModel({model: "gemini-2.0-flash"});
+  const model = genAI.getGenerativeModel({model: "gemini-2.0-flash-001"});
 
   // 2. Check authentication (V2 style)
   // The 'auth' object is part of the 'request' object
