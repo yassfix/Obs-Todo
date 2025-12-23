@@ -1453,6 +1453,8 @@
                         <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
                     </div>
                 </div>
+                
+
             </div>
             
             <div id="task-content-wrapper">
@@ -2587,6 +2589,8 @@
                 saveAllTasks();
                 renderTasks();
             }
+            updateTimeStats();
+            updateStats();
         }
         
         // --- Task Reordering Function ---
@@ -3854,6 +3858,9 @@
             } else {
                 task.completedAt = null;
                 // Update streak data when a task is uncompleted
+                if (task.timerStartTime) {
+                    task.timerStartTime = null; 
+                }
                 updateStreakData();
             }
             
@@ -3861,6 +3868,8 @@
             
             // Re-render all tasks to update stats and lists
             renderTasks();
+            updateStats();     
+            updateTimeStats()
         }
 
         // Storage functions
@@ -3933,6 +3942,8 @@
                         // Update streak data silently
                         updateStreakData();
                         // STOP HERE: Do not re-render the DOM, do not reset conveyor position
+                        updateTimeStats();
+                        updateStats();
                         return; 
                     }
                     // ----------------------------------------------------
@@ -3946,6 +3957,8 @@
                         loadDisplayMode(() => {
                             renderTasks();
                             updateStreakData();
+                            updateTimeStats();
+                            updateStats();
                         });
                     });
                 });
@@ -3974,6 +3987,8 @@
                     loadDisplayMode(() => {
                         renderTasks();
                         updateStreakData();
+                        updateTimeStats();
+                        updateStats();
                     });
                 });
             }
@@ -4877,6 +4892,10 @@
                 saveAllTasks();
                 renderTasks();
             }
+            // --- REFRESH UI STATS ---
+            updateTimeStats();
+            updateStats();
+            updateStreakData();
 
             // Reset fields
             document.getElementById('offline-task-text').value = '';
