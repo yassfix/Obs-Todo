@@ -2460,37 +2460,75 @@
         }
 
         // Time statistics functions
+       
+        // --- DEBUG VERSION: calculateDailyTotal ---
         function calculateDailyTotal() {
             const today = new Date().toDateString();
             let totalSeconds = 0;
             
-            // 1. Sum existing tasks
-            Object.entries(tasks).forEach(([taskId, task]) => {
-                const timeToUse = getCurrentDisplayTime({ ...task, id: taskId });
+            console.group("🔍 DEBUG: calculateDailyTotal");
+            console.log("📅 Target 'Today' Date:", today);
+            console.log("📦 Total Tasks to check:", Object.keys(tasks).length);
 
+            Object.entries(tasks).forEach(([taskId, task]) => {
+                // Calculate the time to add for this specific task
+                const timeToUse = getCurrentDisplayTime({ ...task, id: taskId });
+                let added = false;
+
+                // Check 1: Is it completed today?
                 if (task.completedAt) {
                     const completedDate = new Date(task.completedAt).toDateString();
                     if (completedDate === today) {
                         totalSeconds += timeToUse;
+                        added = true;
+                        console.log(`   ✅ Task [${task.text}] (Completed): Added ${timeToUse}s`);
                     }
-                } else if (task.timeSpent && task.lastUpdated) {
+                } 
+                // Check 2: Was it updated/worked on today (even if active)?
+                else if (task.timeSpent && task.lastUpdated) {
                     const lastUpdatedDate = new Date(task.lastUpdated).toDateString();
                     if (lastUpdatedDate === today) {
                         totalSeconds += timeToUse;
+                        added = true;
+                        console.log(`   ✅ Task [${task.text}] (Active/Updated): Added ${timeToUse}s`);
+                    } else {
+                        console.log(`   ❌ Task [${task.text}] (Active): Skipped. Last updated: ${lastUpdatedDate} vs Today: ${today}`);
                     }
-                } else if (timerIntervals[taskId]) { 
+                } 
+                // Check 3: Is it currently running?
+                else if (timerIntervals[taskId]) { 
                     totalSeconds += timeToUse;
+                    added = true;
+                    console.log(`   ⏱️ Task [${task.text}] (Running): Added ${timeToUse}s`);
                 }
             });
             
-            // 2. Add active Pomodoro contribution (Real-time visual update)
-            // We only add this if the task hasn't been saved yet (State is WORK or PAUSED)
+            // Add Pomodoro time if active
             if (isPomodoroMode && (pomoState === 'WORK' || pomoState === 'PAUSED')) {
                 totalSeconds += Math.floor(pomoAccumulatedContribution);
+                console.log(`   🍅 Pomodoro active: Added ${Math.floor(pomoAccumulatedContribution)}s`);
             }
             
+            console.log("🏁 Final Daily Total Seconds:", totalSeconds);
+            console.groupEnd();
             return totalSeconds;
         }
+
+        // --- DEBUG VERSION: updateTimeStats ---
+        function updateTimeStats() {
+            console.log("🔄 updateTimeStats CALLED");
+            
+            const dailyTotalSeconds = calculateDailyTotal();
+            const lifetimeTotalSeconds = calculateLifetimeTotal();
+            const totalHours = (lifetimeTotalSeconds / 3600).toFixed(1);
+            
+            console.log(`📊 Updating DOM with: Daily=${formatTime(dailyTotalSeconds)}, Total=${totalHours}h`);
+
+            if (dailyTotalEl) dailyTotalEl.textContent = formatTime(dailyTotalSeconds);
+            if (totalHoursEl) totalHoursEl.textContent = `${totalHours} hours`;
+            if (reportTotalHoursEl) reportTotalHoursEl.textContent = totalHours;
+        }
+
 
         function calculateLifetimeTotal() {
             let totalSeconds = 0;
@@ -2505,16 +2543,7 @@
             return totalSeconds;
         }
 
-    function updateTimeStats() {
-        const dailyTotalSeconds = calculateDailyTotal();
-        const lifetimeTotalSeconds = calculateLifetimeTotal();
-        const totalHours = (lifetimeTotalSeconds / 3600).toFixed(1);
-        
-        if (dailyTotalEl) dailyTotalEl.textContent = formatTime(dailyTotalSeconds);
-        // Removed lifetimeTotalEl update
-        if (totalHoursEl) totalHoursEl.textContent = `${totalHours} hours`;
-        if (reportTotalHoursEl) reportTotalHoursEl.textContent = totalHours;
-    }
+  
 
         // Drag and drop functions
         function handleDragStart(e) {
@@ -3781,25 +3810,28 @@
         
         function updateStats() {
             const allTasks = Object.values(tasks);
+            // Filter active tasks
             const activeTasks = allTasks.filter(task => !task.completed);
+            // Filter completed today
             const completedTasks = allTasks.filter(task => task.completed && isToday(task.completedAt));
             
-            // Count ALL incomplete tasks (not just today's) and today's completed tasks
             const totalIncomplete = activeTasks.length;
             const completedToday = completedTasks.length;
             
-            // Progress = completed today / (completed today + total incomplete)
+            // Calculate percentage
             const totalRelevant = completedToday + totalIncomplete;
-            
             let percent = 0;
             if (totalRelevant > 0) {
                 percent = Math.round((completedToday / totalRelevant) * 100);
             }
             
-            progressFill.style.width = `${percent}%`;
-            progressPercent.textContent = `${percent}%`;
-            completedCount.textContent = `${completedToday} completed today`;
-            remainingCount.textContent = `${totalIncomplete} tasks remaining`;
+            // Safely update DOM elements
+            if (progressFill) progressFill.style.width = `${percent}%`;
+            if (progressPercent) progressPercent.textContent = `${percent}%`;
+            
+            // These checks prevent the crash if the elements are missing from HTML
+            if (completedCount) completedCount.textContent = `${completedToday} completed today`;
+            if (remainingCount) remainingCount.textContent = `${totalIncomplete} tasks remaining`;
         }
         
         function escapeHtml(str) {
@@ -3959,6 +3991,7 @@
                             updateStreakData();
                             updateTimeStats();
                             updateStats();
+                            refreshAllTimeDisplays();
                         });
                     });
                 });
@@ -4772,16 +4805,20 @@
         });
 
         // Pause conveyor when interacting with tasks
-        document.addEventListener('mouseenter', function(e) {
-            if (e.target.closest('.task-item') && displayMode !== 'static') {
-                pauseConveyor();
+        document.addEventListener('mouseover', function(e) { // Changed to mouseover for better bubbling support
+            if (e.target && typeof e.target.closest === 'function') {
+                if (e.target.closest('.task-item') && displayMode !== 'static') {
+                    pauseConveyor();
+                }
             }
         });
 
-        document.addEventListener('mouseleave', function(e) {
-            if (e.target.closest('.task-item') && displayMode !== 'static') {
-                // Small delay before resuming
-                setTimeout(resumeConveyor, 1000);
+        document.addEventListener('mouseout', function(e) { // Changed to mouseout
+            if (e.target && typeof e.target.closest === 'function') {
+                if (e.target.closest('.task-item') && displayMode !== 'static') {
+                    // Small delay before resuming
+                    setTimeout(resumeConveyor, 1000);
+                }
             }
         });
 
@@ -4886,11 +4923,15 @@
             };
 
             if (useFirebase && !isGuest) {
-                dbRef.child(newTaskId).set(newTask);
+                dbRef.child(newTaskId).set(newTask).then(() => {
+                    refreshAllTimeDisplays(); // Trigger after firebase update
+                });
+
             } else {
                 tasks[newTaskId] = newTask;
                 saveAllTasks();
                 renderTasks();
+                refreshAllTimeDisplays();
             }
             // --- REFRESH UI STATS ---
             updateTimeStats();
@@ -4901,6 +4942,20 @@
             document.getElementById('offline-task-text').value = '';
             document.getElementById('offline-task-mins').value = '';
             updateStreakData();
+        }
+        function refreshAllTimeDisplays() {
+            // Recalculate the math
+            const dailySeconds = calculateDailyTotal();
+            const lifetimeSeconds = calculateLifetimeTotal();
+            const totalHours = (lifetimeSeconds / 3600).toFixed(1);
+
+            // Update the DOM elements
+            if (dailyTotalEl) dailyTotalEl.textContent = formatTime(dailySeconds);
+            if (totalHoursEl) totalHoursEl.textContent = `${totalHours} hours`;
+            if (reportTotalHoursEl) reportTotalHoursEl.textContent = totalHours;
+            
+            // Update the Progress bar (since it relies on completed vs remaining)
+            updateStats();
         }
 
         // Initial load
