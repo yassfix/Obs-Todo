@@ -1,17 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="H:\Apps Built\Obs Todo\img\ObstodoIcon.png">
-    <title>Task Dashboard | Obs-todo </title>
+    
+    <title>Obs Todo | Free Streamer Task List & Pomodoro Overlay for OBS</title>
+    <meta name="description" content="A free, To-Do list and Pomodoro timer designed  for OBS / streamlabs for twitch / kick . No installation required—just add as a browser source. Features daily streaks, task looping, and detailed reporting for streamers.">
+    <meta name="keywords" content="obs todo list, streamer task list, twitch overlay, obs browser source, pomodoro timer for streamers, obs dockable widgets, stream productivity tools, construct.exr">
+    <meta name="author" content="Construct.exe">
+    <meta name="robots" content="index, follow">
 
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yassfix.github.io/obs-todo/"> <meta property="og:title" content="Obs Todo - The Ultimate Task Dashboard for Streamers">
+    <meta property="og:description" content="Add a powerful task manager to your OBS setup in seconds. Features: Pomodoro timer, streak tracking, and 'Conveyor Belt' display mode. No download needed.">
+    <meta property="og:image" content="https://yassfix.github.io/obs-todo/.github.io/obs-todo/img/social-preview.png"> <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yassfix.github.io/obs-todo/"> <meta property="twitter:title" content="Obs Todo - Free Streamer Task List Overlay">
+    <meta property="twitter:description" content="Boost your stream productivity. A browser-based Todo list and Timer built for OBS Docks.">
+    <meta property="twitter:image" content="https://yassfix.github.io/obs-todo/.github.io/obs-todo/img/social-preview.png">
+
+    <link rel="icon" type="image/png" href="img/ObstodoIcon.png">
+    <link rel="canonical" href="https://construct-exr.github.io/obs-todo/"> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Obs Todo",
+      "url": "https://construct-exr.github.io/obs-todo/",
+      "description": "A to-do list for OBS users and twitch / kick streamers.",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "Any (Web Browser)",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Construct.exe"
+      }
+    }
+    </script>
+
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> <style></style>
     <style>
         :root {
             --primary: #6c5ce7;
-            --primary-light: #a29bfe;
+            --primary-light: oklch(73.588% 0.14122 285.603);
             --secondary: #00b894;
             --background: #000000;
             --card: #000000ec;
@@ -1333,14 +1372,183 @@
     }
         
 
+    /* Navbar Container */
+    .app-navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 25px;
+        background: rgba(255, 255, 255, 0.03); /* Subtle glass effect */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        margin-bottom: 25px;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Brand Styling */
+    .brand-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .nav-logo {
+        width: 45px; /* Slightly smaller looks more premium */
+        height: auto;
+        filter: drop-shadow(0 0 8px rgba(108, 92, 231, 0.4)); /* Glow effect matching your primary color */
+    }
+
+    .brand-text h1 {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--text);
+        margin: 0;
+        line-height: 1;
+        letter-spacing: -0.5px;
+    }
+
+    .brand-text .highlight {
+        color: var(--primary); /* Makes 'Todo' purple */
+    }
+
+    .version-tag {
+        font-size: 0.65rem;
+        background: rgba(255,255,255,0.1);
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: var(--primary-light);
+        vertical-align: middle;
+        margin-left: 5px;
+    }
+
+    /* Right Side Controls */
+    .nav-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+        /* Update: Logout Button (Made smaller and added margin) */
+    .nav-logout {
+        background: transparent;
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        padding: 4px 10px;        /* Smaller padding */
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.75rem;       /* Smaller font to fit next to title */
+        font-weight: 600;
+        margin-left: 15px;        /* Space between Title and Button */
+        transition: all 0.3s ease;
+        white-space: nowrap;      /* Prevents text wrapping */
+    }
+
+    .nav-logout:hover {
+        background: var(--danger);
+        color: white;
+    }
+
+    /* Update: BMC Wrapper (Way smaller) */
+    .bmc-wrapper {
+        transform: scale(0.6);        /* shrunk to 60% size */
+        transform-origin: right center; /* Anchors it to the right so it doesn't float away */
+        display: flex;
+        align-items: center;
+        margin-left: -20px;           /* Pulls it closer to the other controls since scaling creates empty space */
+    }
+
+    /* Ensure the Left side container aligns items correctly */
+    .brand-container {
+        display: flex;
+        align-items: center;
+        gap: 10px; /* Space between logo and text */
+    }
+
+    /* --- UPDATED FOOTER STYLES --- */
+.footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    gap: 8px;
+    color: var(--primary-light);
+    font-size: 0.85rem;
+}
+
+.footer-status-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 5px 12px;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.footer-status-wrapper:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--primary-light);
+}
+
+#user-status {
+    font-size: 0.8rem;
+    font-family: 'Segoe UI Mono', monospace;
+    letter-spacing: 0.5px;
+    transition: color 0.3s ease;
+}
+
+/* Privacy button styling inside footer */
+#toggle-user-status-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 0.9rem;
+    line-height: 1;
+    display: flex; /* Centers the emoji */
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+#toggle-user-status-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Ensure the navbar controls align correctly now that status is gone */
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    justify-content: flex-end;
+}
+
+
+
+
+
     </style>
 </head>
 <body>
     <!--  Login Container -->
     <div id="login-container">
+        
         <div class="header">
-            <h1>Obs Todo</h1>
+            <div class="brand-container" style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 25px;">
+                <img src="img/ObstodoIcon.png" alt="Logo" class="nav-logo" style="display: block;">
+                <div class="brand-text" style="display: flex; align-items: center; height: 100%;">
+                    <h1 style="margin: 0; line-height: 1.2; display: flex; align-items: center;">
+                        Obs<span class="highlight">Todo</span>
+                    </h1>
+                </div>
+            </div>
         </div>
+        
         
         <div style="margin-bottom: 20px;">
             <h3 style="color: var(--primary); margin-bottom: 15px;">Sign Up</h3>
@@ -1393,24 +1601,26 @@
     <!--  Dashboard wrapper with id -->
     <div class="dashboard" id="dashboard-wrapper" style="display: none;">
         <!--  Header with logout button -->
-        <div class="header">
-            <h1>Obs Todo <button id="logout-btn">Logout</button></h1>
+
+    
+    <nav class="app-navbar">
+        <div class="brand-container">
+            <img src="img/ObstodoIcon.png" alt="Logo" class="nav-logo">
+            <div class="brand-text">
+                <h1>Obs<span class="highlight">Todo</span></h1>
+            </div>
+            <button id="logout-btn" class="nav-logout">Logout</button>
+        </div>
+
+        <div class="nav-controls">
+           
             
-            <div class="header-controls" style="display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 40px;">
-                
-                <div style="display: flex; align-items: center; margin-left: 100px;">
-                    <button id="toggle-user-status-btn" style="background: none; border: none; color: var(--primary-light); cursor: pointer; font-size: 1.2rem; margin-right: 8px;" title="Show/Hide User Status">
-                        🔒
-                    </button>
-                    <p id="user-status" class="hidden-status" style="margin: 0;"></p>
-                </div>
-
-                <div class="bmc-container" style="width: 120px; transform: scale(0.48); transform-origin: center-right; flex-shrink: 0; margin-right: 100px">
-                    <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="Construct.exe" data-color="#FFDD00" data-emoji="" data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
-                </div>
-
+            <div class="bmc-wrapper">
+                <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="Construct.exe" data-color="#FFDD00" data-emoji="" data-font="Cookie" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
             </div>
         </div>
+    </nav>
+        
 
         <div class="focus-section">
             <div class="tabs-container">
@@ -1751,9 +1961,17 @@
 
 
 
+        
         <div class="footer">
+            <div class="footer-status-wrapper">
+                <button id="toggle-user-status-btn" title="Show/Hide User Status">🔒</button>
+                <span id="user-status" class="hidden-status"></span>
+            </div>
+            
             <p id="timestamp">Updated: --</p>
         </div>
+
+        
     </div>
 
     <div class="keyword-management" id="keyword-management">
@@ -4319,6 +4537,7 @@
             loginContainer.style.display = 'block';
             dashboardWrapper.style.display = 'none';
             passwordResetContainer.style.display = 'none';
+            document.querySelector('.footer').style.display = 'none';
         }
 
         function showDashboard() {
@@ -4326,46 +4545,36 @@
             dashboardWrapper.style.display = 'block';
             passwordResetContainer.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
+            document.querySelector('.footer').style.display = 'flex';
 
-            // Get the container of the user status elements
-            const userStatusContainer = toggleUserStatusBtn.parentElement;
-            
             // Update user status display
             if (isGuest) {
-                userStatusEl.textContent = "Guest Mode - Completed tasks will be deleted tomorrow";
-                
+                userStatusEl.textContent = "Guest Mode"; 
                 
                 // FOR GUEST: Make it visible by default
                 userStatusEl.classList.remove('hidden-status');
                 userStatusEl.classList.add('visible-status');
-                userStatusEl.style.color = "#fd79a8"; 
+                userStatusEl.style.color = "var(--accent)"; 
 
-                // Hide the toggle button
+                // Hide the lock button for guests (nothing to hide)
                 toggleUserStatusBtn.style.display = 'none'; 
+
+                logoutBtn.textContent = "Sign in";
                 
-                // Remove the large margin from the container
-                userStatusContainer.style.marginLeft = '0';
-                // Center the text (since the button is gone)
-                userStatusContainer.style.justifyContent = 'center';
-
-
             } else {
-                userStatusEl.textContent = `Logged in as ${currentUser.email}`;
+                userStatusEl.textContent = `${currentUser.email}`;
                 
                 // FOR LOGGED-IN USER: Keep the privacy (hidden) default
                 userStatusEl.classList.add('hidden-status');
                 userStatusEl.classList.remove('visible-status');
-                toggleUserStatusBtn.textContent = '🔒';
-
-                // Show the button
-                toggleUserStatusBtn.style.display = 'inline-block'; 
                 
-                // Restore the default styles for non-guest mode
-                userStatusContainer.style.marginLeft = '100px';
-                userStatusContainer.style.justifyContent = 'flex-start'; // Default alignment
+                // Reset color to default incase it was set to guest color previously
+                userStatusEl.style.color = ""; 
+                
+                toggleUserStatusBtn.textContent = '🔒';
+                toggleUserStatusBtn.style.display = 'flex'; 
             }
         }
-
         // --- Password Reset Functions ---
         function showPasswordReset() {
             loginContainer.style.display = 'none';
