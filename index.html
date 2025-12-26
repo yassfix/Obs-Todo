@@ -1,47 +1,58 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <title>Obs Todo | Free Streamer Task List & Pomodoro Overlay for OBS</title>
-    <meta name="description" content="A free, To-Do list and Pomodoro timer designed  for OBS / streamlabs for twitch / kick . No installation required—just add as a browser source. Features daily streaks, task looping, and detailed reporting for streamers.">
-    <meta name="keywords" content="obs todo list, streamer task list, twitch overlay, obs browser source, pomodoro timer for streamers, obs dockable widgets, stream productivity tools, construct.exr">
+
+    <title>OBS Todo | Free Streamer Task List & Pomodoro Overlay for OBS</title>
+
+    <meta name="description" content="Timed to-do list with auto-scrolling and a Pomodoro timer — designed for streamers using OBS or Streamlabs on Twitch or Kick. No installation needed. Includes task rotation, timed tasks, task history, and detailed reporting.">
+
+    <meta name="keywords" content="looping to-do list, rotating to-do list, moving to-do list, auto-scrolling task list, cycling tasks app, task loop dashboard, pomodoro timer, pomodoro to-do app, free to-do list app, free productivity tool, co-working productivity app, coworking focus timer, co working task list, streamer to-do list, to-do list for streamers, streamer task overlay, OBS to-do overlay, Streamlabs task overlay, twitch stream to-do list, kick stream overlay tasks, rotating reminders, continuous task list, dynamic task dashboard">
+
     <meta name="author" content="Construct.exe">
     <meta name="robots" content="index, follow">
 
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://yassfix.github.io/obs-todo/"> <meta property="og:title" content="Obs Todo - The Ultimate Task Dashboard for Streamers">
-    <meta property="og:description" content="Add a powerful task manager to your OBS setup in seconds. Features: Pomodoro timer, streak tracking, and 'Conveyor Belt' display mode. No download needed.">
-    <meta property="og:image" content="https://yassfix.github.io/obs-todo/.github.io/obs-todo/img/social-preview.png"> <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://yassfix.github.io/obs-todo/"> <meta property="twitter:title" content="Obs Todo - Free Streamer Task List Overlay">
-    <meta property="twitter:description" content="Boost your stream productivity. A browser-based Todo list and Timer built for OBS Docks.">
-    <meta property="twitter:image" content="https://yassfix.github.io/obs-todo/.github.io/obs-todo/img/social-preview.png">
+    <meta property="og:url" content="https://yassfix.github.io/obs-todo/">
+    <meta property="og:title" content="OBS Todo — The Ultimate Task Dashboard for Streamers">
+    <meta property="og:description" content="Add a powerful task manager to your OBS setup in seconds. Features a Pomodoro timer, streak tracking, and rotating task display mode. No download needed.">
+    <meta property="og:image" content="https://yassfix.github.io/obs-todo/img/social-preview.png">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yassfix.github.io/obs-todo/">
+    <meta property="twitter:title" content="OBS Todo — Free Streamer Task List Overlay">
+    <meta property="twitter:description" content="Boost your stream productivity with a browser-based to-do list and timer built for OBS docks.">
+    <meta property="twitter:image" content="https://yassfix.github.io/obs-todo/img/social-preview.png">
 
     <link rel="icon" type="image/png" href="img/ObstodoIcon.png">
-    <link rel="canonical" href="https://construct-exr.github.io/obs-todo/"> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    
+    <link rel="canonical" href="https://yassfix.github.io/obs-todo/">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+
     <script type="application/ld+json">
     {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Obs Todo",
-      "url": "https://construct-exr.github.io/obs-todo/",
-      "description": "A to-do list for OBS users and twitch / kick streamers.",
-      "applicationCategory": "ProductivityApplication",
-      "operatingSystem": "Any (Web Browser)",
-      "offers": {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "OBS Todo",
+        "url": "https://yassfix.github.io/obs-todo/",
+        "description": "A to-do list and Pomodoro timer for OBS users and Twitch / Kick streamers.",
+        "applicationCategory": "ProductivityApplication",
+        "operatingSystem": "Any (Web Browser)",
+        "offers": {
         "@type": "Offer",
         "price": "0",
         "priceCurrency": "USD"
-      },
-      "author": {
+        },
+        "author": {
         "@type": "Person",
         "name": "Construct.exe"
-      }
+        }
     }
+    </script>
+    </head>
+
     </script>
 
     
@@ -1533,8 +1544,37 @@
 
 
     </style>
-</head>
-<body>
+<header id="marketing-hero" style="text-align:center; margin:10px auto 20px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.05);">
+    
+    <h1 style="margin:0 0 8px; font-size:1.3rem; color:var(--primary); letter-spacing:0.5px;">
+        OBS Todo - Timed To-Do list & Pomodoro Overlay for Streamers
+    </h1>
+
+    <p style="margin:0 auto 15px; max-width:700px; color:#c3bbff8c; font-size:0.9rem; line-height:1.3;">
+        A free To-do list that auto-scrolls tasks, great for streamers using OBS or Streamlabs. Includes a Pomodoro timer, task looping, individual task timers, and completed tasks history & stats — Completely Browser-based as an overlay with no installation required
+    </p>
+
+    <p style="margin:0; font-size:0.85rem;">
+        <a href="https://docs.obs-todo.com/" target="_blank" style="
+            display: inline-block;
+            color: var(--secondary); 
+            text-decoration: none; 
+            padding: 5px 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            background: rgba(255,255,255,0.03);
+            transition: all 0.2s ease;
+        "
+        onmouseover="this.style.borderColor='var(--secondary)'; this.style.background='rgba(255,255,255,0.08)'"
+        onmouseout="this.style.borderColor='rgba(255,255,255,0.1)'; this.style.background='rgba(255,255,255,0.03)'">
+             Setup Guide: How to integrate with OBS & Streamlabs
+        </a>
+    </p>
+
+</header>
+
+</header>
+
     <!--  Login Container -->
     <div id="login-container">
         
@@ -1711,11 +1751,11 @@
                 <h3>Timer Mode</h3>
                 <div class="mode-selector">
                     <div class="mode-option">
-                        <input type="radio" id="timer-mode-normal" name="timer-mode" value="normal" checked onchange="handleTimerModeChange()">
+                        <input type="radio" id="timer-mode-normal" name="timer-mode" value="normal" onchange="handleTimerModeChange()">
                         <label for="timer-mode-normal">Standard (Count Up)</label>
                     </div>
                     <div class="mode-option">
-                        <input type="radio" id="timer-mode-pomodoro" name="timer-mode" value="pomodoro" onchange="handleTimerModeChange()">
+                        <input type="radio" id="timer-mode-pomodoro" name="timer-mode" value="pomodoro" checked onchange="handleTimerModeChange()">
                         <label for="timer-mode-pomodoro">Pomodoro (Count Down)</label>
                     </div>
                 </div>
@@ -1739,7 +1779,7 @@
                         </div>
 
                         <div class="mode-option">
-                            <input type="radio" id="mode-loop-incompleted" name="display-mode" value="loop-incompleted" checked onchange="handleDisplayModeChange()">
+                            <input type="radio" id="mode-loop-incompleted" name="display-mode" value="loop-incompleted"  onchange="handleDisplayModeChange()">
                             <label for="mode-loop-incompleted">
                                 <span class="icon">⚡</span>
                                 Loop Active
@@ -1755,7 +1795,7 @@
                         </div>
 
                         <div class="mode-option">
-                            <input type="radio" id="mode-rotate-incompleted" name="display-mode" value="rotate-incompleted" onchange="handleDisplayModeChange()">
+                            <input type="radio" id="mode-rotate-incompleted" name="display-mode" value="rotate-incompleted" checked onchange="handleDisplayModeChange()">
                             <label for="mode-rotate-incompleted">
                                 <span class="icon">📌</span>
                                 Pinned Top <br> + looped
@@ -2155,6 +2195,34 @@
 
 
         const alarmSound = document.getElementById('pomo-alarm');
+
+        
+        // --- NEW HELPER: Generate Default Tasks ---
+        function generateDefaultTasks() {
+            const defaultTasks = {};
+            const texts = [
+                "My 1st Task",
+                "My 2nd Task",
+                "My 3rd Task",
+                "My 4th Task",
+                "My 5th Task"
+            ];
+
+            texts.forEach((text, index) => {
+                const id = `default-${Date.now()}-${index}`;
+                defaultTasks[id] = {
+                    text: text,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                    order: index,
+                    timeSpent: 0,
+                    timerStartTime: null,
+                    lastUpdated: new Date().toISOString(),
+                    keywords: []
+                };
+            });
+            return defaultTasks;
+        }
 
 
 
@@ -4177,36 +4245,37 @@
         
 
         function loadTasks() {
+            // 1. Logic for Logged In Firebase Users
             if (useFirebase && currentUserId && !isGuest) {
-                // --- NEW: Start listening for mode changes immediately ---
                 setupModeListeners(); 
 
                 dbRef = firebase.database().ref('users/' + currentUserId + '/tasks');
                 dbRef.on('value', snap => {
                     const newTasks = snap.val() || {};
                     
-                    // --- SMART RENDER CHECK (Prevents Conveyor Jumps) ---
-                    // If we are using a conveyor belt, check if the update is just a timer tick
+                    // If data updates but structure is same (e.g. timer tick), don't re-render
                     if (displayMode !== 'static' && !hasStructuralChanges(tasks, newTasks)) {
-                        // Update data in memory so timers flow correctly
                         tasks = newTasks;
-                        // Update streak data silently
                         updateStreakData();
-                        // STOP HERE: Do not re-render the DOM, do not reset conveyor position
                         updateTimeStats();
                         updateStats();
                         return; 
                     }
-                    // ----------------------------------------------------
 
                     tasks = newTasks;
                     
-                    // Initialize app state
+                    // Initialization Chain
                     loadStreakData(() => {
-                        // We only load displayMode ONCE locally for initial setup
-                        // The 'setupModeListeners' function handles real-time updates now
                         loadDisplayMode(() => {
-                            renderTasks();
+                            // FORCE DEFAULT: If new user (no mode saved), set Pinned Top
+                            if (!displayMode || displayMode === 'static') { 
+                                displayMode = 'rotate-incompleted';
+                                // Update UI checkbox
+                                const radio = document.getElementById('mode-rotate-incompleted');
+                                if(radio) radio.checked = true;
+                            }
+
+                            renderTasks(); // Triggers animation automatically
                             updateStreakData();
                             updateTimeStats();
                             updateStats();
@@ -4214,12 +4283,20 @@
                         });
                     });
                 });
+
+            // 2. Logic for GUEST / LocalStorage Users
             } else {
-                // LocalStorage / Guest Logic (Unchanged)
                 const storedTasks = localStorage.getItem('obs_todo_tasks');
-                tasks = storedTasks ? JSON.parse(storedTasks) : {};
                 
-                // Cleanup guest tasks
+                if (storedTasks) {
+                    tasks = JSON.parse(storedTasks);
+                } else {
+                    // NEW GUEST: Generate 5 default tasks
+                    tasks = generateDefaultTasks();
+                    localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
+                }
+                
+                // Cleanup old daily tasks for guests
                 if (isGuest) {
                     const today = new Date().toDateString();
                     let hasChanges = false;
@@ -4237,7 +4314,24 @@
                 
                 loadStreakData(() => {
                     loadDisplayMode(() => {
-                        renderTasks();
+                        // --- CRITICAL FIX HERE ---
+                        // If no mode is saved in LocalStorage (First time visitor), FORCE 'rotate-incompleted'
+                        const storedMode = localStorage.getItem('obs_todo_displayMode');
+                        
+                        if (!storedMode) {
+                            displayMode = 'rotate-incompleted';
+                            saveDisplayMode(); // Save immediately so it persists
+                            
+                            // Visually check the correct radio button
+                            const radio = document.getElementById('mode-rotate-incompleted');
+                            if(radio) radio.checked = true;
+                            
+                            // Update text description
+                            updateModeDescription();
+                        }
+
+                        // Render will now see 'rotate-incompleted' and start animation instantly
+                        renderTasks(); 
                         updateStreakData();
                         updateTimeStats();
                         updateStats();
@@ -4511,13 +4605,16 @@
 
         // Initialize display mode on page load
         function initializeDisplayMode() {
-            // Load display mode from storage (this will set displayMode variable and update radio button)
             loadDisplayMode(() => {
-                // If no stored mode, default to 'loop-incompleted'
+                // If no stored mode, default to 'rotate-incompleted' (Pinned Top + Looped)
                 if (!displayMode) {
-                    displayMode = 'loop-incompleted';
-                    document.getElementById('mode-loop-incompleted').checked = true;
-                    saveDisplayMode(); // Save the default
+                    displayMode = 'rotate-incompleted'; // CHANGED DEFAULT HERE
+                    
+                    // Update the radio button in UI
+                    const radio = document.getElementById('mode-rotate-incompleted');
+                    if(radio) radio.checked = true;
+                    
+                    saveDisplayMode(); 
                 }
                 
                 // Stop any existing conveyor
@@ -4534,6 +4631,10 @@
 
         // --- Authentication Functions ---
         function showLogin() {
+            // Always show the marketing hero on the login page
+            const hero = document.getElementById('marketing-hero');
+            if (hero) hero.style.display = 'block';
+
             loginContainer.style.display = 'block';
             dashboardWrapper.style.display = 'none';
             passwordResetContainer.style.display = 'none';
@@ -4541,6 +4642,17 @@
         }
 
         function showDashboard() {
+            const hero = document.getElementById('marketing-hero');
+            
+            // Logic for hiding/showing the marketing hero
+            if (hero) {
+                if (isGuest) {
+                    hero.style.display = 'block';
+                } else {
+                    hero.style.display = 'none';
+                }
+            }
+
             loginContainer.style.display = 'none';
             dashboardWrapper.style.display = 'block';
             passwordResetContainer.style.display = 'none';
@@ -4549,30 +4661,27 @@
 
             // Update user status display
             if (isGuest) {
+                // --- GUEST MODE ---
                 userStatusEl.textContent = "Guest Mode"; 
-                
-                // FOR GUEST: Make it visible by default
                 userStatusEl.classList.remove('hidden-status');
                 userStatusEl.classList.add('visible-status');
                 userStatusEl.style.color = "var(--accent)"; 
-
-                // Hide the lock button for guests (nothing to hide)
                 toggleUserStatusBtn.style.display = 'none'; 
+                
+                // Set button to "Sign in" so guests can go log in
+                logoutBtn.textContent = "Sign in"; 
 
-                logoutBtn.textContent = "Sign in";
-                
             } else {
+                // --- LOGGED IN MODE ---
                 userStatusEl.textContent = `${currentUser.email}`;
-                
-                // FOR LOGGED-IN USER: Keep the privacy (hidden) default
                 userStatusEl.classList.add('hidden-status');
                 userStatusEl.classList.remove('visible-status');
-                
-                // Reset color to default incase it was set to guest color previously
                 userStatusEl.style.color = ""; 
-                
                 toggleUserStatusBtn.textContent = '🔒';
                 toggleUserStatusBtn.style.display = 'flex'; 
+                
+                // NEW LINE: Explicitly set button to "Logout"
+                logoutBtn.textContent = "Logout";
             }
         }
         // --- Password Reset Functions ---
@@ -4686,7 +4795,8 @@
         }
 
         function handleLogout() {
-            if (useFirebase) {
+            // If it's a real user, sign them out
+            if (useFirebase && currentUser && !isGuest) {
                 firebase.auth().signOut();
             }
 
@@ -4695,19 +4805,26 @@
             currentUser = null;
             currentUserId = null;
             isGuest = false;
+            
+            // Clear mock user but NOT the tasks (so guest tasks remain in cache)
             localStorage.removeItem('obs_todo_mock_user');
+            
+            // Show the login screen explicitly
             showLogin();
+            
             // Clear form fields
-            signupEmail.value = '';
-            signupPassword.value = '';
-            loginEmail.value = '';
-            loginPassword.value = '';
+            if(signupEmail) signupEmail.value = '';
+            if(signupPassword) signupPassword.value = '';
+            if(loginEmail) loginEmail.value = '';
+            if(loginPassword) loginPassword.value = '';
         }
 
         function initializeAuth() {
+            // Determine if we should check Firebase or localStorage
             if (useFirebase) {
                 firebase.auth().onAuthStateChanged((user) => {
                     if (user) {
+                        // User is logged in
                         currentUser = user;
                         currentUserId = user.uid;
                         isGuest = false;
@@ -4715,11 +4832,12 @@
                         loadTasks();
                         loadKeywords(); 
                     } else {
-                        showLogin();
+                        // User is NOT logged in -> AUTO GUEST MODE
+                        handleGuestLogin();
                     }
                 });
             } else {
-                // For localStorage mode, check if we have a mock user
+                // LocalStorage mode check
                 const mockUser = localStorage.getItem('obs_todo_mock_user');
                 if (mockUser) {
                     currentUser = { email: mockUser };
@@ -4729,9 +4847,13 @@
                     loadTasks();
                     loadKeywords();
                 } else {
-                    showLogin();
+                    // No mock user -> AUTO GUEST MODE
+                    handleGuestLogin();
                 }
             }
+            
+            // Ensure Pomodoro UI is set correctly on load based on HTML default
+            handleTimerModeChange();
         }
 
         // --- Generate Insights Function ---
