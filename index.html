@@ -438,8 +438,10 @@
             margin-bottom: 15px;
             border-radius: 8px;
             padding-right: 5px;
+            
+            /* ADD THIS LINE for smooth resizing: */
+            transition: height 0.3s ease-out, max-height 0.3s ease-out;
         }
-
         .tasks-container::-webkit-scrollbar {
             width: 8px;
         }
@@ -1030,6 +1032,7 @@
 
         /* Minimal Mode Styles */
         .minimal-mode .header,
+        .minimal-mode .app-navbar,
         .minimal-mode .tabs-container,
         .minimal-mode .footer,
         .minimal-mode .display-mode-section,
@@ -1540,6 +1543,258 @@
 }
 
 
+/* --- PAUSE STATE STYLES --- */
+.tasks-container {
+    position: relative; /* Needed for the 'Paused' label positioning */
+    transition: border-color 0.3s, box-shadow 0.3s;
+    border: 1px solid transparent; /* Prevent layout jump */
+}
+
+/* When the JavaScript adds this class */
+.tasks-container.is-paused {
+    border-color: var(--secondary);
+    box-shadow: 0 0 15px rgba(0, 184, 148, 0.15);
+    cursor: grab; /* Shows a 'hand' indicating you've stopped the list */
+}
+
+/* The 'PAUSED' Label Animation */
+.tasks-container.is-paused::after {
+    content: "⏸ PAUSED";
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    background: var(--secondary);
+    color: #000;
+    font-size: 0.7rem;
+    font-weight: 400;
+    padding: 3px 5px;
+    border-radius: 4px;
+    pointer-events: none; /* Let clicks pass through to tasks */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    animation: fadeInPulse 0.5s ease-out forwards;
+    z-index: 10;
+}
+
+@keyframes fadeInPulse {
+    0% { opacity: 0; transform: scale(0.8); }
+    50% { transform: scale(1.1); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+/* Add this to your style section */
+.task-text {
+    cursor: text; /* Indicates editable text */
+}
+.task-text:hover {
+    color: #96cbc1fa; /* Optional: Highlights text on hover */
+}
+
+/* --- LONG PRESS ANIMATION --- */
+
+/* The state when user is holding the mouse down */
+.task-item.holding-active {
+    position: relative;
+    overflow: hidden; /* Ensures the fill stays inside rounded corners */
+}
+
+/* Create a pseudo-element for the filling effect */
+.task-item.holding-active::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 0%; /* Start empty */
+    background-color: rgba(108, 92, 231, 0.3); /* Primary color, semi-transparent */
+    z-index: 0; /* Behind the text */
+    pointer-events: none;
+    
+    /* Animate width from 0% to 100% over 2 seconds */
+    animation: longPressFill 0.962s linear forwards;
+}
+
+@keyframes longPressFill {
+    to { width: 100%; }
+}
+
+/* Success Flash (Optional) */
+.flash-success {
+    animation: flashGreen 0.5s ease-out;
+}
+@keyframes flashGreen {
+    0% { background-color: var(--secondary); }
+    100% { background-color: rgba(255,255,255,.05); }
+}
+
+/* Ensure content sits above the background animation */
+.task-main-content, .task-details {
+    position: relative;
+    z-index: 1;
+}
+
+
+/* --- COMPLETION CONFETTI ANIMATION --- */
+.confetti-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background-color: var(--secondary);
+    border-radius: 50%;
+    pointer-events: none; /* Let clicks pass through */
+    z-index: 100;
+}
+
+@keyframes explode-dist {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; }
+}
+
+/* Optional: Flash the task row green briefly */
+.task-item.completion-flash {
+    animation: flashGreenRow 0.5s ease-out;
+}
+@keyframes flashGreenRow {
+    0% { background-color: rgba(0, 184, 148, 0.4); transform: scale(1.02); }
+    100% { background-color: rgba(255,255,255,.05); transform: scale(1); }
+}
+
+
+
+
+/* --- RPG LEVEL UP ANIMATION --- */
+
+/* The floating text style */
+.rpg-floating-text {
+    position: fixed; /* Fixed ensures it floats above everything */
+    color: #fdcb6e;  /* Gold color */
+    font-weight: 800;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 9999;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8); /* Strong shadow for readability */
+    animation: floatUpXP 1s ease-out forwards;
+}
+
+/* The background burst style */
+.task-item.rpg-glow-active {
+    position: relative; 
+}
+
+/* Create the burst using a pseudo-element */
+.task-item.rpg-glow-active::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 100%; height: 100%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(253, 203, 110, 0.6) 0%, transparent 70%);
+    z-index: 0; /* Behind text */
+    pointer-events: none;
+    border-radius: 8px;
+    animation: glowBurst 0.6s ease-out forwards;
+}
+
+/* Animations */
+@keyframes floatUpXP {
+    0% { opacity: 0; transform: translateY(0) scale(0.5); }
+    20% { opacity: 1; transform: translateY(-10px) scale(1.2); }
+    100% { opacity: 0; transform: translateY(-50px) scale(1); }
+}
+
+@keyframes glowBurst {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+/* --- FIRE STORM ANIMATION --- */
+
+/* --- FIRE STORM ANIMATION (INTENSE) --- */
+.fire-particle {
+    position: absolute;
+    bottom: -10px; /* Start slightly lower */
+    width: 14px;   /* Bigger flames (was 8px) */
+    height: 14px;
+    border-radius: 50%;
+    background-color: #ff9f43;
+    pointer-events: none;
+    z-index: 100; /* Ensure it's on top */
+    mix-blend-mode: screen; /* Makes overlapping flames brighter */
+    opacity: 0;
+    box-shadow: 0 0 15px #ff9f43, 0 0 5px #fff; /* Intense Glow */
+}
+
+/* The actual burning movement */
+@keyframes burnUp {
+    0% { 
+        transform: translateY(0) scale(1); 
+        opacity: 1; 
+        background-color: #fff; /* Start White Hot */
+    }
+    30% {
+        background-color: #feca57; /* Yellow */
+    }
+    60% { 
+        background-color: #ff9f43; /* Orange */
+        opacity: 0.9;
+    }
+    100% { 
+        transform: translateY(var(--rise-height)) scale(0.2); 
+        opacity: 0; 
+        background-color: #ee5253; /* Red tip */
+    }
+}
+
+/* Optional: Slight rumble/shake of the task row while burning */
+.task-item.fire-rumble {
+    animation: rumble 0.5s ease-in-out;
+}
+@keyframes rumble {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    75% { transform: translateX(2px); }
+}
+
+/* --- RPG LEVEL UP ANIMATION (Stronger) --- */
+.rpg-floating-text {
+    position: fixed;
+    color: #ffd700; /* Bright Gold */
+    font-weight: 900;
+    font-size: 1.2rem;
+    pointer-events: none;
+    z-index: 9999;
+    text-shadow: 0 2px 10px rgba(0,0,0,1);
+    animation: floatUpXP 1s ease-out forwards;
+}
+
+.task-item.rpg-glow-active::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 120%; height: 200%; /* Larger burst */
+    transform: translate(-50%, -50%);
+    /* Stronger Gradient */
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.8) 0%, transparent 70%);
+    z-index: 0; 
+    pointer-events: none;
+    animation: glowBurst 0.6s ease-out forwards;
+}
+
+/* --- FIRE STORM ANIMATION (High Visibility) --- */
+.fire-particle {
+    position: absolute;
+    bottom: 0;
+    width: 8px; /* Bigger flames */
+    height: 8px;
+    border-radius: 50%;
+    background-color: #ff9f43;
+    pointer-events: none;
+    z-index: 2; /* Move IN FRONT of text background, but using blend mode */
+    mix-blend-mode: hard-light; /* Pops more on dark backgrounds */
+    opacity: 0;
+}
+
 
 
 
@@ -1694,7 +1949,7 @@
                 </div>
 
                 <audio id="pomo-alarm" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" preload="auto"></audio>
-
+                <audio id="completion-sound" src="sounds/win-notification-2018.wav" preload="auto"></audio>
                 <div class="progress-section">
                     <div class="progress-container">
                         <div class="progress-header">
@@ -1791,6 +2046,14 @@
                             <label for="mode-loop-all">
                                 <span class="icon">🔄</span>
                                 Loop All
+                            </label>
+                        </div>
+
+                        <div class="mode-option">
+                            <input type="radio" id="mode-bounce" name="display-mode" value="bounce" onchange="handleDisplayModeChange()">
+                            <label for="mode-bounce">
+                                <span class="icon">↕️</span>
+                                 Auto-scroll Mode 
                             </label>
                         </div>
 
@@ -2002,11 +2265,32 @@
 
 
         
-        <div class="footer">
+     <div class="footer">
             <div class="footer-status-wrapper">
                 <button id="toggle-user-status-btn" title="Show/Hide User Status">🔒</button>
                 <span id="user-status" class="hidden-status"></span>
             </div>
+
+            <a id="footer-setup-guide" href="https://docs.obs-todo.com/" target="_blank" style="
+                display: none; /* Hidden by default */
+                color: var(--primary-light); 
+                background: transparent;
+                border: none;
+                border-radius: 0;
+                border-bottom: 1px solid var(--primary-light); /* The line below */
+                text-decoration: none; 
+                padding: 0;
+                padding-bottom: 2px; /* Slight gap for the underline */
+                font-size: 0.8rem;
+                margin-top: 10px;
+                opacity: 0.7;
+                cursor: pointer;
+                transition: all 0.2s ease;
+            "
+            onmouseover="this.style.opacity='1'; this.style.color='var(--secondary)'; this.style.borderBottomColor='var(--secondary)'"
+            onmouseout="this.style.opacity='0.7'; this.style.color='var(--primary-light)'; this.style.borderBottomColor='var(--primary-light)'">
+                Setup Guide
+            </a>
             
             <p id="timestamp">Updated: --</p>
         </div>
@@ -2144,6 +2428,7 @@
         let editingTaskId = null;
         let editingKeywordIndex = null;
         let expandedTasks = {}; 
+        let taskInactivityTimers = {};
         // Add this variable with your other app state variables
         let masterAnimationFrame = null;
         let lastFrameTime = 0;
@@ -2154,9 +2439,10 @@
         let conveyorTasks = [];
         let conveyorPosition = 0;
         let isConveyorPaused = false;
-        let conveyorSpeed = 50; 
-
-        
+        let conveyorSpeed = 30; 
+        let bounceDirection = 1;
+        let bouncePauseTimer = 0;
+        let isAnimatingCompletion = false; // <--- ADD THIS
 
         // Default keywords
         let keywords = ['Work', 'Personal', 'Urgent', 'Important', 'Shopping'];
@@ -2196,7 +2482,21 @@
 
         const alarmSound = document.getElementById('pomo-alarm');
 
-        
+        function clearTaskTimer(taskId) {
+            if (taskInactivityTimers[taskId]) {
+                clearTimeout(taskInactivityTimers[taskId]);
+                delete taskInactivityTimers[taskId];
+            }
+        }
+        function startTaskTimer(taskId) {
+            clearTaskTimer(taskId); // Ensure no duplicate timers
+            taskInactivityTimers[taskId] = setTimeout(() => {
+                if (expandedTasks[taskId]) {
+                    expandedTasks[taskId] = false;
+                    renderTasks(); // Re-render to update UI
+                }
+            }, 4000);
+        }
         // --- NEW HELPER: Generate Default Tasks ---
         function generateDefaultTasks() {
             const defaultTasks = {};
@@ -2657,6 +2957,23 @@
             return `${hours} hours`;
         }
 
+
+
+                // --- RESTORE TIMERS ON RELOAD ---
+        function restoreRunningTimers() {
+            Object.keys(tasks).forEach(taskId => {
+                const task = tasks[taskId];
+                // If task has a start time, is not complete, and isn't already running in memory
+                if (task.timerStartTime && !task.completed && !timerIntervals[taskId]) {
+                    // Re-initialize the internal timer logic
+                    // Note: startTimer checks if timerStartTime exists, so it won't overwrite the original start time
+                    startTimer(taskId); 
+                }
+            });
+        }
+
+
+
         // Updated timer functions for more accurate display
         function startTimer(taskId) {
             if (timerIntervals[taskId]) return; // Timer already running
@@ -2937,6 +3254,85 @@
 
             saveAllTasks();
             renderTasks();
+        }
+        // --- LONG PRESS LOGIC ---
+
+        let longPressTimer = null;
+        let visualTimer = null;
+        const LONG_PRESS_DURATION = 1300; 
+        const VISUAL_DELAY = 300;
+
+        function startLongPress(taskId, element) {
+            // 1. Start the Action Timer (The goal)
+            longPressTimer = setTimeout(() => {
+                moveTaskToTop(taskId);
+                if (navigator.vibrate) navigator.vibrate(50);
+                resetLongPress(element);
+            }, LONG_PRESS_DURATION);
+
+            // 2. Start the Visual Timer (Delays the animation start)
+            visualTimer = setTimeout(() => {
+                element.classList.add('holding-active');
+            }, VISUAL_DELAY);
+        }
+
+        function cancelLongPress(element) {
+            resetLongPress(element);
+        }
+
+        function resetLongPress(element) {
+            // Clear Action Timer
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            
+            // Clear Visual Timer (This prevents the animation on short clicks)
+            if (visualTimer) {
+                clearTimeout(visualTimer);
+                visualTimer = null;
+            }
+
+            // Remove CSS class immediately
+            if (element) {
+                element.classList.remove('holding-active');
+            }
+        }
+        function moveTaskToTop(taskId) {
+            // 1. Get all active tasks sorted by current order
+            const activeTasks = Object.entries(tasks)
+                .filter(([id, task]) => !task.completed)
+                .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+
+            // 2. Extract the task we want to move
+            const taskIndex = activeTasks.findIndex(([id]) => id === taskId);
+            if (taskIndex <= 0) return; // Already at top or not found
+
+            const [movingId, movingTask] = activeTasks[taskIndex];
+            
+            // 3. Remove it from current position
+            activeTasks.splice(taskIndex, 1);
+            
+            // 4. Add it to the very start (Index 0)
+            activeTasks.unshift([movingId, movingTask]);
+
+            // 5. Re-assign order numbers to everyone
+            activeTasks.forEach(([id, task], index) => {
+                tasks[id].order = index;
+            });
+
+            // 6. Save and Render
+            saveAllTasks();
+            renderTasks();
+            
+            // Optional: Flash the task to show it moved
+            setTimeout(() => {
+                const movedEl = document.querySelector(`.task-item[data-id="${taskId}"]`);
+                if(movedEl) {
+                    movedEl.classList.add('flash-success');
+                    setTimeout(() => movedEl.classList.remove('flash-success'), 1000);
+                }
+            }, 50);
         }
 
         // Task editing functions
@@ -3225,6 +3621,14 @@
         // Toggle task details visibility
         function toggleTaskDetails(taskId) {
             expandedTasks[taskId] = !expandedTasks[taskId];
+            
+            // [NEW] Logic to manage timers on toggle
+            if (expandedTasks[taskId]) {
+                startTaskTimer(taskId); // Start countdown immediately
+            } else {
+                clearTaskTimer(taskId); // Clean up if closed manually
+            }
+            
             renderTasks();
         }
 
@@ -3471,6 +3875,23 @@
             const taskItem = document.createElement('li');
             taskItem.className = 'task-item conveyor-task';
             taskItem.dataset.id = taskId;
+
+            // --- NEW: Attach Long Press Listeners ---
+            if (!task.completed) {
+                // Mouse Events
+                taskItem.onmousedown = () => startLongPress(taskId, taskItem);
+                taskItem.onmouseup = () => cancelLongPress(taskItem);
+                taskItem.onmouseleave = () => cancelLongPress(taskItem);
+                
+                // Touch Events (Mobile)
+                taskItem.ontouchstart = () => startLongPress(taskId, taskItem);
+                taskItem.ontouchend = () => cancelLongPress(taskItem);
+                taskItem.ontouchcancel = () => cancelLongPress(taskItem);
+                
+                // Cancel if dragging starts (to prevent conflict)
+                taskItem.ondragstart = () => cancelLongPress(taskItem); 
+            }
+
             taskItem.draggable = currentTab === 'active' && displayMode === 'static';
             
             if (task.completed) {
@@ -3574,7 +3995,10 @@
                     <div class="task-main-content">
                         ${orderControlsHTML}
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
-                        <input type="text" class="task-input" value="${escapeHtml(task.text)}">
+                        
+                        <input type="text" class="task-input" value="${escapeHtml(task.text)}" 
+                            onkeydown="if(event.key === 'Enter') saveTaskEdit('${taskId}'); if(event.key === 'Escape') cancelTaskEdit();">
+                        
                         <div class="task-actions">
                             <button class="action-btn" onclick="saveTaskEdit('${taskId}')">✔️</button>
                             <button class="action-btn" onclick="cancelTaskEdit()">❌</button>
@@ -3592,7 +4016,11 @@
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
                         
                         <div class="task-content">
-                            <span class="task-text">${escapeHtml(task.text)}</span>
+                            <span class="task-text" 
+                                ondblclick="event.stopPropagation(); startEditingTask('${taskId}')" 
+                                title="Double-click to edit">
+                                ${escapeHtml(task.text)}
+                            </span>
                             
                             <div class="task-timer-row">
                                 <span class="timer-display-small" id="timer-${taskId}">
@@ -3642,8 +4070,25 @@
                 taskItem.addEventListener('dragend', handleDragEnd);
             }
 
+            if (expandedTasks[taskId]) {
+                // If mouse enters or keys are typed, STOP the timer
+                taskItem.addEventListener('mouseenter', () => clearTaskTimer(taskId));
+                taskItem.addEventListener('focusin', () => clearTaskTimer(taskId));
+                
+                // If mouse leaves, RESTART the 4s timer
+                taskItem.addEventListener('mouseleave', () => startTaskTimer(taskId));
+                
+                // If keyboard focus leaves, RESTART the timer
+                taskItem.addEventListener('focusout', (e) => {
+                    if (!taskItem.contains(e.relatedTarget)) {
+                        startTaskTimer(taskId);
+                    }
+                });
+            }
+
             return taskItem;
         }
+        
 
         function renderTasks() {
             taskListEl.innerHTML = '';
@@ -4166,29 +4611,193 @@
 
         function toggleTask(taskId) {
             const task = tasks[taskId];
+            const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            
+            // 1. Update Data
             task.completed = !task.completed;
             
             if (task.completed) {
-                task.completedAt = new Date().toISOString();
-                // Stop timer when completing
-                stopTimer(taskId);
-                // Update streak data when a task is completed
-                updateStreakData();
-            } else {
-                task.completedAt = null;
-                // Update streak data when a task is uncompleted
-                if (task.timerStartTime) {
-                    task.timerStartTime = null; 
+                const sound = document.getElementById('completion-sound');
+                if (sound) {
+                    sound.currentTime = 0; // Reset sound so it plays instantly
+                    sound.volume = 0.5;    // Adjust volume (0.1 to 1.0)
+                    sound.play().catch(e => console.log("Audio play blocked:", e));
                 }
+
+                if (expandedTasks[taskId]) {
+                    expandedTasks[taskId] = false;
+                    clearTaskTimer(taskId);
+                    
+                    // Force visual close immediately before animation starts
+                    if (taskItem) {
+                        const detailsDiv = taskItem.querySelector('.task-details');
+                        const dropdownBtn = taskItem.querySelector('.dropdown-btn');
+                        if (detailsDiv) detailsDiv.classList.remove('visible');
+                        if (dropdownBtn) dropdownBtn.classList.remove('rotated');
+                    }
+                }
+                // ---------------------------------------------
+
+                task.completedAt = new Date().toISOString();
+                stopTimer(taskId);
+                
+                // 2. VISUALS & ANIMATION FLAG
+                if (taskItem) {
+                    // SET FLAG: This tells the Firebase listener "Don't refresh the list yet!"
+                    isAnimatingCompletion = true; 
+                    
+                    taskItem.classList.add('completed');
+                    const checkbox = taskItem.querySelector('.task-checkbox');
+                    if (checkbox) checkbox.checked = true;
+                    
+                    // --- TRIGGER EXISTING ANIMATIONS ---
+                    // These functions exist in your code, so we call them directly:
+                    triggerRpgLevelUp(taskId);       // Gold Burst + XP Text
+                    triggerFireStorm(taskId);        // Fire effect
+                    triggerCompletionConfetti(taskId); // Confetti explosion
+                }
+                
+                // 3. Save Data 
                 updateStreakData();
+                updateTaskInStorage(taskId);
+                updateTimeStats();
+                
+                // 4. Wait 1.6s for animation, THEN refresh
+                setTimeout(() => {
+                    // CLEAR FLAG: Now the listener is allowed to update the list again
+                    isAnimatingCompletion = false;
+                    
+                    renderTasks();
+                    updateStats();
+                }, 600); 
+
+            } else {
+                // Un-checking: No animation needed, render immediately
+                task.completedAt = null;
+                if (task.timerStartTime) task.timerStartTime = null;
+                
+                updateStreakData();
+                updateTaskInStorage(taskId);
+                renderTasks();
+                updateStats();
+                updateTimeStats();
             }
+        }
+                        
+
+
+        function triggerRpgLevelUp(taskId) {
+            const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            if (!taskItem) return;
+
+            // 1. Trigger Background Burst
+            taskItem.classList.add('rpg-glow-active');
+            setTimeout(() => taskItem.classList.remove('rpg-glow-active'), 600);
+
+            // 2. Create Floating XP Text
+            const checkbox = taskItem.querySelector('.task-checkbox');
+            const rect = checkbox.getBoundingClientRect(); // Get exact position of checkbox
+
+            const floatEl = document.createElement('div');
+            floatEl.classList.add('rpg-floating-text');
+            floatEl.innerText = "Well done!"; // You can change this text!
+
+            // Position it right on top of the checkbox
+            floatEl.style.left = (rect.left + 10) + 'px'; 
+            floatEl.style.top = (rect.top - 10) + 'px';
+
+            document.body.appendChild(floatEl);
+
+            // Cleanup element after animation
+            setTimeout(() => floatEl.remove(), 1000);
+        }
+
+        function triggerFireStorm(taskId) {
+            const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            if (!taskItem) return;
+
+            // 1. Add Rumble Effect to the row
+            taskItem.classList.add('fire-rumble');
+            setTimeout(() => taskItem.classList.remove('fire-rumble'), 500);
+
+            // 2. Generate Fire Particles across the whole width
+            const particleCount = 40; // Number of flames
             
-            updateTaskInStorage(taskId);
+            for (let i = 0; i < particleCount; i++) {
+                const flame = document.createElement('div');
+                flame.classList.add('fire-particle');
+                
+                // Randomize horizontal position (0% to 100% of the row)
+                const leftPos = Math.random() * 100;
+                flame.style.left = leftPos + '%';
+                
+                // Randomize flame height (how high it goes) - Negative pixels means Up
+                const riseHeight = -1 * (30 + Math.random() * 40) + 'px'; 
+                flame.style.setProperty('--rise-height', riseHeight);
+                
+                // Randomize size slightly
+                const scale = 0.5 + Math.random() * 1.5;
+                flame.style.transform = `scale(${scale})`;
+                
+                // Randomize speed (0.5s to 1.2s)
+                const duration = 0.5 + Math.random() * 0.7 + 's';
+                flame.style.animation = `burnUp ${duration} ease-out forwards`;
+                
+                // Randomize start time slightly so they don't all pop up at once
+                flame.style.animationDelay = (Math.random() * 0.2) + 's';
+
+                taskItem.appendChild(flame);
+
+                // Cleanup
+                setTimeout(() => { flame.remove(); }, 1500);
+            }
+        }
+
+
+        function triggerCompletionConfetti(taskId) {
+            const taskItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
+            if (!taskItem) return;
+
+            // 1. Flash the row
+            taskItem.classList.add('completion-flash');
+            setTimeout(() => taskItem.classList.remove('completion-flash'), 500);
+
+            // 2. Find the checkbox to center the explosion
+            const checkbox = taskItem.querySelector('.task-checkbox');
+            const rect = checkbox.getBoundingClientRect();
             
-            // Re-render all tasks to update stats and lists
-            renderTasks();
-            updateStats();     
-            updateTimeStats()
+            // Create 20 particles
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('confetti-particle');
+                
+                // Randomize color (Green, Purple, Pink)
+                const colors = ['#00b894', '#6c5ce7', '#fd79a8'];
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // Randomize direction (spread)
+                // x: -100px to +100px, y: -100px to +100px
+                const x = (Math.random() - 0.5) * 200 + 'px';
+                const y = (Math.random() - 0.5) * 200 + 'px';
+                
+                particle.style.setProperty('--x', x);
+                particle.style.setProperty('--y', y);
+                
+                // Set fixed position based on checkbox
+                // Note: We use 'fixed' to escape the overflow:hidden of the task list if needed, 
+                // but 'absolute' works if the container isn't clipping. 
+                // Let's use absolute relative to the body/dashboard for safety.
+                particle.style.left = (rect.left + rect.width / 2) + 'px';
+                particle.style.top = (rect.top + rect.height / 2) + 'px';
+                particle.style.position = 'fixed'; 
+                
+                particle.style.animation = `explode-dist 0.8s ease-out forwards`;
+                
+                document.body.appendChild(particle);
+                
+                // Cleanup
+                setTimeout(() => { particle.remove(); }, 800);
+            }
         }
 
         // Storage functions
@@ -4263,18 +4872,22 @@
                     }
 
                     tasks = newTasks;
+                    if (isAnimatingCompletion) {
+                        console.log("Animation playing: Skipping listener render");
+                        return; 
+                    }
                     
                     // Initialization Chain
                     loadStreakData(() => {
                         loadDisplayMode(() => {
                             // FORCE DEFAULT: If new user (no mode saved), set Pinned Top
-                            if (!displayMode || displayMode === 'static') { 
+                            if (!displayMode) {  
                                 displayMode = 'rotate-incompleted';
                                 // Update UI checkbox
                                 const radio = document.getElementById('mode-rotate-incompleted');
                                 if(radio) radio.checked = true;
                             }
-
+                            restoreRunningTimers();
                             renderTasks(); // Triggers animation automatically
                             updateStreakData();
                             updateTimeStats();
@@ -4330,7 +4943,7 @@
                             updateModeDescription();
                         }
 
-                        // Render will now see 'rotate-incompleted' and start animation instantly
+                        restoreRunningTimers();
                         renderTasks(); 
                         updateStreakData();
                         updateTimeStats();
@@ -4383,6 +4996,9 @@
                 case 'static':
                     description = 'Current tasks are displayed in a static list.';
                     break;
+                case 'bounce':
+                    description = 'The list gently bobs up and down. Perfect for short lists (1-3 tasks) to keep the screen alive.';
+                    break;
                 case 'loop-incompleted':
                     description = 'Incompleted tasks will continuously move from bottom to top like a conveyor belt.';
                     break;
@@ -4398,40 +5014,96 @@
         }
 
         
-    function initConveyor() {
-        // ... (Keep your existing filtering logic for conveyorTasks) ... 
-        // Copy the first part of your existing initConveyor function regarding filtering tasks
-        // UNTIL you reach the "startConveyor()" line.
-        
-        // [PASTE YOUR EXISTING FILTERING LOGIC HERE]
-        // ...
-        conveyorTasks = Object.entries(tasks)
-            .filter(([id, task]) => {
-                if (displayMode === 'loop-incompleted' || displayMode === 'rotate-incompleted') {
-                    return !task.completed;
-                } else if (displayMode === 'loop-all') {
-                    return !task.completed || (task.completed && isToday(task.completedAt));
-                }
-                return false;
-            })
-            .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
+        function initConveyor() {
+        // 1. Filter tasks (Standard logic)
+            conveyorTasks = Object.entries(tasks)
+                .filter(([id, task]) => {
+                    if (displayMode === 'loop-incompleted' || displayMode === 'rotate-incompleted' || displayMode === 'bounce') {
+                        return !task.completed;
+                    } else if (displayMode === 'loop-all') {
+                        return !task.completed || (task.completed && isToday(task.completedAt));
+                    }
+                    return false;
+                })
+                .sort(([, a], [, b]) => (a.order || 0) - (b.order || 0));
 
-        if (conveyorTasks.length === 0) {
-            renderTasks();
-            return;
+            if (conveyorTasks.length === 0) {
+                renderTasks();
+                return;
+            }
+
+            // 2. APPLY SPECIFIC HEIGHTS PER MODE
+            const tasksContainer = document.getElementById('tasks-container');
+            const conveyorContainer = document.getElementById('conveyor-container');
+            const count = conveyorTasks.length;
+
+            if (count < 5) {
+                tasksContainer.style.maxHeight = 'none';
+                if (conveyorContainer) conveyorContainer.style.minHeight = '0px';
+
+                // --- SEPARATE CONFIGURATION FOR EACH MODE ---
+                switch (displayMode) {
+                    
+                    case 'rotate-incompleted': 
+                        // "Pinned Top + Looped" (Needs space for the pinned header)
+                        switch (count) {
+                            case 4: tasksContainer.style.height = '220px'; break; 
+                            case 3: tasksContainer.style.height = '155px'; break;
+                            case 2: tasksContainer.style.height = '100px'; break;
+                            case 1: tasksContainer.style.height = '55px';  break;
+                        }
+                        break;
+
+                    case 'loop-incompleted':
+                        // "Loop Active" (Standard loop, usually tight)
+                        switch (count) {
+                            case 4: tasksContainer.style.height = '215px'; break;
+                            case 3: tasksContainer.style.height = '120px'; break;
+                            case 2: tasksContainer.style.height = '95px'; break;
+                            case 1: tasksContainer.style.height = '52px';  break;
+                        }
+                        break;
+
+                    case 'loop-all':
+                        // "Loop All" (Often same as Loop Active, but separated here for you)
+                        switch (count) {
+                            case 4: tasksContainer.style.height = '215px'; break;
+                            case 3: tasksContainer.style.height = '160px'; break;
+                            case 2: tasksContainer.style.height = '105px'; break;
+                            case 1: tasksContainer.style.height = '52px';  break;
+                        }
+                        break;
+
+                    case 'bounce':
+                        // "Auto-scroll Mode" (Needs slightly more room to visibly bounce)
+                        switch (count) {
+                            case 4: tasksContainer.style.height = '230px'; break;
+                            case 3: tasksContainer.style.height = '175px'; break;
+                            case 2: tasksContainer.style.height = '115px'; break;
+                            case 1: tasksContainer.style.height = '60px';  break;
+                        }
+                        break;
+                }
+
+            } else {
+                // Default for large lists (5+ tasks)
+                tasksContainer.style.height = '272px'; 
+                tasksContainer.style.maxHeight = '272px';
+                if (conveyorContainer) conveyorContainer.style.minHeight = '100px'; 
+            }
+
+            // 3. Setup Animation State
+            conveyorPosition = 0;
+            isConveyorPaused = false;
+            bounceDirection = 1; 
+            bouncePauseTimer = 0;
+            
+            conveyorContainer.classList.add('conveyor-container');
+            conveyorTrack.style.transform = 'translateY(0)';
+            
+            renderConveyorTasks();
+            startMasterLoop(); 
         }
-        
-        conveyorPosition = 0;
-        isConveyorPaused = false;
-        
-        conveyorContainer.classList.add('conveyor-container');
-        conveyorTrack.style.transform = 'translateY(0)';
-        
-        renderConveyorTasks();
-        
-        // HERE IS THE CHANGE:
-        startMasterLoop(); 
-    }
 
     function startConveyor() {
         // Deprecated - logic moved to startMasterLoop
@@ -4439,18 +5111,26 @@
     }
 
     function stopConveyor() {
-        // Only stop master loop if no timers are running
+        // Stop loop if safe
         if (Object.keys(timerIntervals).length === 0 && pomoState !== 'WORK' && pomoState !== 'BREAK') {
             stopMasterLoop();
         }
         
-        // Clean up static container if it exists
         const staticContainer = document.getElementById('static-top-task');
         if (staticContainer) {
             staticContainer.remove();
         }
         
-        // Reset container
+        // --- NEW: Reset Height Logic ---
+        const tasksContainer = document.getElementById('tasks-container');
+        if (tasksContainer) {
+            // Clear the inline styles so CSS takes over again
+            tasksContainer.style.height = ''; 
+            tasksContainer.style.maxHeight = ''; 
+        }
+        // -------------------------------
+        
+        // Clean up container
         taskListEl.innerHTML = '';
         conveyorContainer.classList.remove('conveyor-container');
         conveyorTrack.style.transform = 'translateY(0)';
@@ -4532,33 +5212,94 @@
             }
         }
         
-    function moveConveyor(deltaTime = 16) { 
-        if (conveyorTasks.length === 0) return;
+        function moveConveyor(deltaTime = 16) { 
+            if (conveyorTasks.length === 0) return;
 
-        // Normalize speed: 50px per second
-        // deltaTime is in ms. 
-        const pixelsPerSecond = conveyorSpeed; 
-        const movement = (pixelsPerSecond * deltaTime) / 1000;
-        
-        conveyorPosition -= movement;
+            // --- CASE: BOUNCE MODE (UPDATED) ---
+            // Scrolls to bottom, pauses 1s, scrolls to top, pauses 1s.
+            // --- CASE: BOUNCE MODE (FIXED) ---
+    // Scrolls to bottom, pauses 1s, scrolls to top, pauses 1s.
+           // --- CASE: BOUNCE MODE (SCROLLBAR SYNCED) ---
+            // Manipulates scrollTop so the scrollbar moves visibly
+            if (displayMode === 'bounce') {
+                
+                // 1. Check if we are currently pausing
+                if (bouncePauseTimer > 0) {
+                    bouncePauseTimer -= deltaTime;
+                    return; 
+                }
 
-        const trackHeight = conveyorTrack.scrollHeight;
-        const containerHeight = conveyorContainer.clientHeight;
+                const viewingWindow = document.getElementById('tasks-container');
+                
+                // Calculate max scrollable distance
+                // (Total Height - Visible Height)
+                const maxScroll = viewingWindow.scrollHeight - viewingWindow.clientHeight;
 
-        if (Math.abs(conveyorPosition) >= containerHeight) {
-            conveyorTrack.style.opacity = '0';
+                // Safety: If content fits perfectly, ensure we sit at top and do nothing
+                if (maxScroll <= 0) {
+                    viewingWindow.scrollTop = 0;
+                    return;
+                }
+
+                // 2. Ensure CSS Transform is cleared so it doesn't fight the scrollbar
+                conveyorTrack.style.transform = `translateY(0px)`;
+
+                // 3. Set Speed 
+                const yoyoSpeed = 30; // px per second
+                const movement = (yoyoSpeed * deltaTime) / 1000;
+
+                // 4. Apply Movement
+                if (bounceDirection === 1) {
+                    // Moving DOWN (Value increases towards maxScroll)
+                    conveyorPosition += movement;
+                    
+                    if (conveyorPosition >= maxScroll) {
+                        conveyorPosition = maxScroll;
+                        bounceDirection = -1; // Switch to Up
+                        bouncePauseTimer = 1000; // Pause at bottom
+                    }
+                } else {
+                    // Moving UP (Value decreases towards 0)
+                    conveyorPosition -= movement;
+                    
+                    if (conveyorPosition <= 0) {
+                        conveyorPosition = 0;
+                        bounceDirection = 1; // Switch to Down
+                        bouncePauseTimer = 1000; // Pause at top
+                    }
+                }
+
+                // 5. Apply the calculated position to the container's scrollbar
+                viewingWindow.scrollTop = conveyorPosition;
+                return; 
+            }
+
+    // --- STANDARD LOGIC (Loop & Rotate) ---
+    // ... rest of your existing function below ...
+
+            // --- STANDARD LOGIC (Loop & Rotate) ---
             conveyorTrack.style.transition = 'none';
-            conveyorPosition = containerHeight; // Start from bottom
-            conveyorTrack.style.transform = `translateY(${conveyorPosition}px)`;
-            void conveyorTrack.offsetHeight; 
-            setTimeout(() => {
-                conveyorTrack.style.transition = '';
-                conveyorTrack.style.opacity = '1';
-            }, 50);
-        } else {
+
+            const pixelsPerSecond = conveyorSpeed; 
+            const movement = (pixelsPerSecond * deltaTime) / 1000;
+            conveyorPosition -= movement;
+            
+            const firstTask = taskListEl.firstElementChild;
+            
+            if (firstTask) {
+                const taskHeight = firstTask.offsetHeight + 8; // Height + Margin
+                
+                if (Math.abs(conveyorPosition) >= taskHeight) {
+                    taskListEl.appendChild(firstTask);
+                    conveyorPosition += taskHeight;
+                }
+            }
+
             conveyorTrack.style.transform = `translateY(${conveyorPosition}px)`;
         }
-    }
+
+
+
 
         function handleRotateIncompleted() {
             // For rotate-incompleted mode, we periodically rotate the tasks (except the first one)
@@ -4639,6 +5380,10 @@
             dashboardWrapper.style.display = 'none';
             passwordResetContainer.style.display = 'none';
             document.querySelector('.footer').style.display = 'none';
+            const footerGuide = document.getElementById('footer-setup-guide');
+            if (footerGuide) {
+                footerGuide.style.display = 'none';
+            }
         }
 
         function showDashboard() {
@@ -4658,6 +5403,15 @@
             passwordResetContainer.style.display = 'none';
             logoutBtn.style.display = 'inline-block';
             document.querySelector('.footer').style.display = 'flex';
+
+            const footerGuide = document.getElementById('footer-setup-guide');
+            if (footerGuide) {
+                if (isGuest) {
+                    footerGuide.style.display = 'none'; // Hide for Guests
+                } else {
+                    footerGuide.style.display = 'inline-block'; // Show for Registered Users
+                }
+            }
 
             // Update user status display
             if (isGuest) {
@@ -5124,6 +5878,7 @@
         }
 
 
+        const containerEl = document.getElementById('tasks-container');
         
         // Display mode listeners
         document.addEventListener('DOMContentLoaded', function() {
@@ -5136,21 +5891,21 @@
             updateModeDescription();
         });
 
-        // Pause conveyor when interacting with tasks
-        document.addEventListener('mouseover', function(e) { // Changed to mouseover for better bubbling support
-            if (e.target && typeof e.target.closest === 'function') {
-                if (e.target.closest('.task-item') && displayMode !== 'static') {
-                    pauseConveyor();
-                }
+        // --- UPDATED: Pausing Logic ---
+
+        // 1. When mouse ENTERS the big box -> Pause indefinitely
+        containerEl.addEventListener('mouseenter', () => {
+            if (displayMode !== 'static') {
+                pauseConveyor();
+                containerEl.classList.add('is-paused'); // Triggers CSS animation
             }
         });
 
-        document.addEventListener('mouseout', function(e) { // Changed to mouseout
-            if (e.target && typeof e.target.closest === 'function') {
-                if (e.target.closest('.task-item') && displayMode !== 'static') {
-                    // Small delay before resuming
-                    setTimeout(resumeConveyor, 1000);
-                }
+        // 2. When mouse LEAVES the big box -> Resume
+        containerEl.addEventListener('mouseleave', () => {
+            if (displayMode !== 'static') {
+                resumeConveyor();
+                containerEl.classList.remove('is-paused'); // Removes CSS animation
             }
         });
 
