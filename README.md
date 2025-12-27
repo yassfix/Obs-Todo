@@ -75,6 +75,18 @@ body::-webkit-scrollbar {
 }
 
 ```
+
+### How to Control the List
+To interact with the list (add tasks, check them off, start timers) without leaving OBS:
+
+* Right-click the **Todo Overlay** source in OBS.
+* Select **Interact**.
+* A window will pop up allowing you to type and click just like a normal browser.
+
+
+---------------------------------------
+
+
 ## Contributing
 ### Contributions are welcome! This project uses:
 
@@ -98,4 +110,5 @@ This project is free to use.
 ### Author:Construct.exe / yassfix
 -----------------------------------------------------------
 Made with 💜 for the streaming community.
+
 
