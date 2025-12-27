@@ -78,7 +78,7 @@ body::-webkit-scrollbar {
 ## Contributing
 ### Contributions are welcome! This project uses:
 
-* Vanilla JS (No framework overhead)
+* Vanilla JS 
 * Chart.js for analytics
 * Firebase SDK for backend
   
@@ -98,3 +98,4 @@ This project is free to use.
 ### Author:Construct.exe / yassfix
 -----------------------------------------------------------
 Made with 💜 for the streaming community.
+
