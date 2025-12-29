@@ -3280,9 +3280,11 @@
 
         // Task removal function
         function removeTask(taskId) {
-            // 1. STOP THE TIMER FIRST (Fixes the Zombie Task bug)
+            // 1. SILENT KILL: Stop timer manually without calling pauseTimer()
+            // This prevents the "Final Save" that resurrects the task
             if (timerIntervals[taskId]) {
-                pauseTimer(taskId); // This clears the interval so it stops saving to DB
+                clearInterval(timerIntervals[taskId].storageInterval); // Stop the loop
+                delete timerIntervals[taskId]; // Delete the reference
             }
 
             // 2. Remove from Database / Storage
