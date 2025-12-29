@@ -1795,6 +1795,55 @@
     opacity: 0;
 }
 
+/* --- WEEKLY REPORT TABLE STYLES --- */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on mobile */
+}
+
+.weekly-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.weekly-table th {
+    color: var(--primary-light);
+    border-bottom: 2px solid var(--primary);
+    padding: 12px 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.weekly-table td {
+    padding: 12px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: var(--text);
+    vertical-align: middle;
+}
+
+.weekly-table tr:last-child td {
+    border-bottom: none;
+}
+
+.weekly-table tr:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Style for the keywords inside the table */
+.table-keyword-pill {
+    display: inline-block;
+    background-color: rgba(108, 92, 231, 0.2); /* Primary low opacity */
+    color: #a29bfe;
+    border: 1px solid rgba(108, 92, 231, 0.3);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin-right: 4px;
+    margin-bottom: 2px;
+}
+
 
 
 
@@ -2249,6 +2298,23 @@
                     <div class="chart-container" style="margin-top: 20px;">
                         <h3>Cumulative Time Spent Over Time (Hours)</h3>
                         <canvas id="cumulative-time-chart"></canvas>
+                    </div>
+
+                    <div class="chart-container" style="height: auto; min-height: 200px; margin-top: 20px;">
+                        <h3>Weekly Progress Log</h3>
+                        <div class="table-responsive">
+                            <table class="weekly-table">
+                                <thead>
+                                    <tr>
+                                        <th>Week Of</th>
+                                        <th>Hours</th>
+                                        <th>Top Focus (Keywords)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="weekly-progress-body">
+                                    </tbody>
+                            </table>
+                        </div>
                     </div>
                     
                 </div>
@@ -4386,6 +4452,7 @@
             });
 
             updateDailyProgressChart()
+            renderWeeklyProgress();
         }
 
 
@@ -5370,6 +5437,8 @@
             });
         }
 
+        
+
         // --- Authentication Functions ---
         function showLogin() {
             // Always show the marketing hero on the login page
@@ -5986,6 +6055,106 @@
             });
             dropdown.value = currentVal;
         }
+
+
+        function renderWeeklyProgress() {
+            const tbody = document.getElementById('weekly-progress-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            const allTasks = Object.values(tasks);
+            // Filter only completed tasks with a valid date
+            const completedTasks = allTasks.filter(t => t.completed && t.completedAt);
+
+            // 1. Group Data by Week
+            const weeksData = {};
+
+            completedTasks.forEach(task => {
+                const date = new Date(task.completedAt);
+                
+                // Calculate "Week Start" (Monday)
+                const day = date.getDay();
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday
+                const monday = new Date(date.setDate(diff));
+                monday.setHours(0, 0, 0, 0);
+                
+                // Create a Key string for sorting/grouping (e.g., "Jan 12, 2025")
+                const weekKey = monday.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+                const sortKey = monday.getTime(); // Timestamp for easy sorting later
+
+                if (!weeksData[sortKey]) {
+                    weeksData[sortKey] = {
+                        label: weekKey,
+                        totalSeconds: 0,
+                        keywords: {}
+                    };
+                }
+
+                // Accumulate Time
+                const duration = task.timeSpent || 0;
+                weeksData[sortKey].totalSeconds += duration;
+
+                // Accumulate Keyword Stats (Weighted by time spent)
+                if (task.keywords && task.keywords.length > 0) {
+                    task.keywords.forEach(kw => {
+                        weeksData[sortKey].keywords[kw] = (weeksData[sortKey].keywords[kw] || 0) + duration;
+                    });
+                } else {
+                    weeksData[sortKey].keywords['Uncategorized'] = (weeksData[sortKey].keywords['Uncategorized'] || 0) + duration;
+                }
+            });
+
+            // 2. Sort Weeks (Newest First)
+            const sortedWeekKeys = Object.keys(weeksData).sort((a, b) => b - a);
+
+            if (sortedWeekKeys.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--primary-light);">No data available yet.</td></tr>';
+                return;
+            }
+
+            // 3. Render Rows
+            sortedWeekKeys.forEach(key => {
+                const week = weeksData[key];
+                
+                // Convert seconds to hours formatted
+                const hours = (week.totalSeconds / 3600).toFixed(1);
+
+                // Sort Keywords by time spent for this week to find top 3
+                const sortedKeywords = Object.entries(week.keywords)
+                    .sort(([, timeA], [, timeB]) => timeB - timeA)
+                    .slice(0, 3) // Top 3
+                    .map(([kw]) => kw);
+
+                // Create Keyword HTML
+                let keywordHTML = '';
+                if (sortedKeywords.length > 0) {
+                    keywordHTML = sortedKeywords.map(kw => `<span class="table-keyword-pill">${escapeHtml(kw)}</span>`).join('');
+                } else {
+                    keywordHTML = '<span style="opacity:0.5; font-size:0.8rem;">—</span>';
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${week.label}</td>
+                    <td style="color: var(--secondary); font-weight:bold;">${hours}h</td>
+                    <td>${keywordHTML}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         function addOfflineTask() {
             const text = document.getElementById('offline-task-text').value.trim();
