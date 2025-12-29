@@ -3278,9 +3278,14 @@
         }
 
 
-         // Task removal function
+        // Task removal function
         function removeTask(taskId) {
-            // OBS FIX: Removed the confirm() check because OBS blocks popups
+            // 1. STOP THE TIMER FIRST (Fixes the Zombie Task bug)
+            if (timerIntervals[taskId]) {
+                pauseTimer(taskId); // This clears the interval so it stops saving to DB
+            }
+
+            // 2. Remove from Database / Storage
             if (useFirebase && !isGuest) {
                 dbRef.child(taskId).remove();
             } else {
@@ -3288,6 +3293,8 @@
                 saveAllTasks();
                 renderTasks();
             }
+            
+            // 3. Update UI
             updateTimeStats();
             updateStats();
         }
