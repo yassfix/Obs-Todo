@@ -1844,6 +1844,237 @@
     margin-bottom: 2px;
 }
 
+/* --- REWARD SECTION STYLES --- */
+.reward-section {
+    background: linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(0,0,0,0.3) 100%);
+    border: 1px solid rgba(255,215,0,0.2); /* Subtle Gold Border */
+    border-radius: 12px;
+    padding: 30px;
+    margin-top: 30px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.reward-header {
+    margin-bottom: 20px;
+}
+
+.reward-header h3 {
+    color: #fdcb6e; /* Gold color */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+.character-stage {
+    position: relative;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    margin-bottom: 20px;
+}
+
+/* The Speech Bubble */
+.reward-bubble {
+    position: absolute;
+    top: 0;
+    background-color: #fff;
+    color: #2d3436;
+    padding: 15px;
+    border-radius: 15px;
+    font-size: 0.9rem;
+    max-width: 280px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    z-index: 10;
+    cursor: text;
+    border: 2px solid #fdcb6e;
+    transition: transform 0.2s;
+}
+
+.reward-bubble:hover {
+    transform: scale(1.05);
+}
+
+/* Speech bubble tail */
+.reward-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 10px 10px 0;
+    border-style: solid;
+    border-color: #fff transparent transparent transparent;
+}
+
+.reward-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.reward-input-line {
+    border: none;
+    border-bottom: 1px solid #dfe6e9;
+    padding: 2px;
+    font-family: 'Segoe UI', sans-serif;
+    width: 100%;
+    text-align: center;
+    outline: none;
+    color: #2d3436;
+    font-weight: bold;
+}
+
+/* The Coin Character */
+.coin-character-img {
+    width: 140px;
+    height: auto;
+    filter: drop-shadow(0 0 10px rgba(253, 203, 110, 0.4));
+    transition: all 0.5s ease;
+    cursor: pointer;
+    animation: floatChar 3s ease-in-out infinite;
+}
+
+.coin-character-img:hover {
+    filter: drop-shadow(0 0 20px rgba(253, 203, 110, 0.8));
+}
+
+@keyframes floatChar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+/* Progress Bar Specifics */
+.reward-progress-track {
+    background-color: rgba(255,255,255,0.1);
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+}
+
+.reward-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #fdcb6e, #fab1a0);
+    width: 0%;
+    transition: width 1s ease-out;
+    position: relative;
+}
+
+/* Shine effect on bar */
+.reward-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: linear-gradient(
+        45deg, 
+        rgba(255,255,255,0) 25%, 
+        rgba(255,255,255,0.2) 50%, 
+        rgba(255,255,255,0) 75%
+    );
+    background-size: 20px 20px;
+    opacity: 0.5;
+}
+
+.reward-stats-text {
+    margin-top: 8px;
+    font-size: 0.8rem;
+    color: #fdcb6e;
+    font-family: 'Segoe UI Mono', monospace;
+}
+
+/* WIN STATE STYLES */
+.golden-text {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 20px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    animation: shine 3s linear infinite;
+    background-size: 200%;
+}
+
+@keyframes shine {
+    to { background-position: 200% center; }
+}
+
+.vanish-animation {
+    animation: vanishPop 0.8s forwards;
+}
+
+@keyframes vanishPop {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+    100% { transform: scale(0); opacity: 0; }
+}
+
+.restart-btn {
+    background: linear-gradient(45deg, #fdcb6e, #e17055);
+    border: none;
+    padding: 12px 25px;
+    border-radius: 25px;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(225, 112, 85, 0.4);
+    transition: transform 0.2s;
+}
+
+.restart-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Collection Gallery */
+.reward-collection {
+    margin-top: 30px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 20px;
+    display: none; /* Hidden if empty */
+}
+
+.collection-grid {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.collected-item {
+    width: 60px;
+    height: 60px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    padding: 10px;
+    border: 2px solid #fdcb6e;
+    opacity: 0.7;
+    transition: all 0.2s;
+}
+
+.collected-item:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+.collected-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+#toggle-collection-btn:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+    border-color: var(--secondary) !important;
+    color: var(--secondary) !important;
+}
+
 
 
 
@@ -2064,7 +2295,7 @@
                     </div>
                 </div>
                 <div class="mode-description">
-                    Switch between standard daily tracking or Pomodoro sessions..........................................
+                    Switch between standard daily tracking or Pomodoro sessions
                 </div>
                 </div>
 
@@ -2170,6 +2401,60 @@
                             <div class="stat-label">Total Hours</div>
                         </div>
                     </div>
+
+                    <div class="reward-section" id="reward-section">
+                        <div class="reward-header">
+                            <h3 id="reward-quest-title">Current Quest: The 1000 Hour Journey</h3>
+                        </div>
+
+                        <div id="reward-active-state">
+                            <div class="character-stage">
+                                <div class="reward-bubble">
+                                    <div class="reward-inputs">
+                                        <input type="text" class="reward-input-line" id="reward-input-1" placeholder="Reward 1 (e.g. New Monitor)" onchange="saveRewardData()">
+                                        <input type="text" class="reward-input-line" id="reward-input-2" placeholder="Reward 2 (e.g. Vacation)" onchange="saveRewardData()">
+                                    </div>
+                                </div>
+                                <img src="img/gift.png" 
+                                    alt="Reward Character" 
+                                    class="coin-character-img" 
+                                    id="active-character-img"
+                                    onclick="pokeCharacter()">
+                            </div>
+
+                            <div class="reward-progress-container">
+                                <div class="reward-progress-track">
+                                    <div class="reward-progress-fill" id="reward-progress-bar" style="width: 0%"></div>
+                                </div>
+                                <div class="reward-stats-text" id="reward-progress-text">
+                                    0 / 1000 Hours
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="reward-win-state" style="display: none; padding: 40px 0;">
+                            <h2 class="golden-text">Congratulations!</h2>
+                            <p style="color: var(--primary-light); margin-bottom: 20px; font-size: 1.1rem;">
+                                You have unlocked your rewards!
+                                <br>
+                                <span id="won-rewards-text" style="color: #fdcb6e; font-weight: bold;"></span>
+                            </p>
+                            <button class="restart-btn" id="claim-reward-btn" onclick="resetRewardJourney(event)">Start Next Level</button>
+                        </div>
+
+                        <button id="toggle-collection-btn" onclick="toggleCollection()" style="display:none; margin: 20px auto 0; background:none; border:1px solid var(--primary-light); color:var(--primary-light); padding: 5px 15px; border-radius: 15px; cursor: pointer; font-size: 0.8rem;">
+                            View Reward Collection 📦
+                        </button>
+
+                        <div class="reward-collection" id="reward-collection-section" style="display: none;">
+                            <h4 style="color: var(--primary-light); font-size: 0.8rem;">Past Victories</h4>
+                            <div class="collection-grid" id="collection-grid">
+                                </div>
+                        </div>
+                    </div>
+
+
+
 
                     <!--  Insights Section -->
                     <div class="insights-section">
@@ -4254,6 +4539,8 @@
 
             // Streak Calculations (already done in calculateStreakStats)
             
+            loadRewardData();
+            
             
             // --- 2. Calculate Cumulative Data for Line Charts ---
             const dataByDay = {};
@@ -5107,6 +5394,7 @@
                 renderTasks();
                 return;
             }
+            
 
             // 2. APPLY SPECIFIC HEIGHTS PER MODE
             const tasksContainer = document.getElementById('tasks-container');
@@ -5178,6 +5466,11 @@
             conveyorTrack.style.transform = 'translateY(0)';
             
             renderConveyorTasks();
+            if (tasksContainer) {
+                tasksContainer.scrollTop = 0;
+            }
+
+
             startMasterLoop(); 
         }
 
@@ -5291,24 +5584,15 @@
         function moveConveyor(deltaTime = 16) { 
             if (conveyorTasks.length === 0) return;
 
-            // --- CASE: BOUNCE MODE (UPDATED) ---
-            // Scrolls to bottom, pauses 1s, scrolls to top, pauses 1s.
-            // --- CASE: BOUNCE MODE (FIXED) ---
-    // Scrolls to bottom, pauses 1s, scrolls to top, pauses 1s.
-           // --- CASE: BOUNCE MODE (SCROLLBAR SYNCED) ---
-            // Manipulates scrollTop so the scrollbar moves visibly
+            // --- CASE 1: BOUNCE MODE ---
+            // This mode relies on manipulating the ScrollBar (scrollTop) directly
             if (displayMode === 'bounce') {
-                
-                // 1. Check if we are currently pausing
                 if (bouncePauseTimer > 0) {
                     bouncePauseTimer -= deltaTime;
                     return; 
                 }
 
                 const viewingWindow = document.getElementById('tasks-container');
-                
-                // Calculate max scrollable distance
-                // (Total Height - Visible Height)
                 const maxScroll = viewingWindow.scrollHeight - viewingWindow.clientHeight;
 
                 // Safety: If content fits perfectly, ensure we sit at top and do nothing
@@ -5317,57 +5601,57 @@
                     return;
                 }
 
-                // 2. Ensure CSS Transform is cleared so it doesn't fight the scrollbar
+                // Ensure CSS Transform is cleared so it doesn't fight the scrollbar
                 conveyorTrack.style.transform = `translateY(0px)`;
 
-                // 3. Set Speed 
                 const yoyoSpeed = 30; // px per second
                 const movement = (yoyoSpeed * deltaTime) / 1000;
 
-                // 4. Apply Movement
-                if (bounceDirection === 1) {
-                    // Moving DOWN (Value increases towards maxScroll)
+                if (bounceDirection === 1) { // Moving DOWN
                     conveyorPosition += movement;
-                    
                     if (conveyorPosition >= maxScroll) {
                         conveyorPosition = maxScroll;
-                        bounceDirection = -1; // Switch to Up
-                        bouncePauseTimer = 1000; // Pause at bottom
+                        bounceDirection = -1; 
+                        bouncePauseTimer = 1000; 
                     }
-                } else {
-                    // Moving UP (Value decreases towards 0)
+                } else { // Moving UP
                     conveyorPosition -= movement;
-                    
                     if (conveyorPosition <= 0) {
                         conveyorPosition = 0;
-                        bounceDirection = 1; // Switch to Down
-                        bouncePauseTimer = 1000; // Pause at top
+                        bounceDirection = 1; 
+                        bouncePauseTimer = 1000; 
                     }
                 }
 
-                // 5. Apply the calculated position to the container's scrollbar
                 viewingWindow.scrollTop = conveyorPosition;
                 return; 
             }
 
-    // --- STANDARD LOGIC (Loop & Rotate) ---
-    // ... rest of your existing function below ...
+            // --- CASE 2: STANDARD LOOP MODES ---
+            // These modes rely on CSS Transform. The ScrollBar MUST stay at 0 (Top).
+            
+            const viewingWindow = document.getElementById('tasks-container');
+            if (viewingWindow) {
+                // FORCE View to top. This prevents the "empty view" bug if 
+                // you were previously scrolled down in Bounce mode.
+                viewingWindow.scrollTop = 0;
+            }
 
-            // --- STANDARD LOGIC (Loop & Rotate) ---
             conveyorTrack.style.transition = 'none';
 
             const pixelsPerSecond = conveyorSpeed; 
             const movement = (pixelsPerSecond * deltaTime) / 1000;
-            conveyorPosition -= movement;
+            conveyorPosition -= movement; // Moves UP
             
             const firstTask = taskListEl.firstElementChild;
             
             if (firstTask) {
                 const taskHeight = firstTask.offsetHeight + 8; // Height + Margin
                 
+                // If the first task has moved completely out of view (upwards)
                 if (Math.abs(conveyorPosition) >= taskHeight) {
-                    taskListEl.appendChild(firstTask);
-                    conveyorPosition += taskHeight;
+                    taskListEl.appendChild(firstTask); // Move it to the bottom
+                    conveyorPosition += taskHeight;    // Reset position mathematically
                 }
             }
 
@@ -5805,6 +6089,295 @@
             // Trigger OBS Refresh by changing the URL hash
             triggerObsRefresh();
         }
+
+
+
+
+        /* --- REWARD SYSTEM LOGIC --- */
+
+        let rewardData = {
+            startHours: 0,         // The total lifetime hours when the user STARTED this 1000h journey
+            isActive: true,
+            reward1: "",
+            reward2: "",
+            history: []            // Array to store completed runs
+        };
+
+        // 1. Load Reward Data
+        function loadRewardData() {
+            if (useFirebase && currentUserId && !isGuest) {
+                firebase.database().ref('users/' + currentUserId + '/rewards').once('value').then(snap => {
+                    const data = snap.val();
+                    if (data) {
+                        rewardData = data;
+                        updateRewardUI();
+                    } else {
+                        // First time setup: Set startHours to current total lifetime hours
+                        // so they start from 0 progress on the bar.
+                        initNewRewardJourney(); 
+                    }
+                });
+            } else {
+                const stored = localStorage.getItem('obs_todo_rewards');
+                if (stored) {
+                    rewardData = JSON.parse(stored);
+                    updateRewardUI();
+                } else {
+                    initNewRewardJourney();
+                }
+            }
+        }
+
+        function initNewRewardJourney() {
+            const currentTotalSeconds = calculateLifetimeTotal();
+            const currentTotalHours = currentTotalSeconds / 3600;
+            
+            // OLD LOGIC: rewardData.startHours = currentTotalHours; 
+            // This made it start at 0% regardless of your past work.
+            
+            // NEW LOGIC: Snap to the most recent 1000-hour milestone.
+            // Example: If you have 450 hours, this calculates 0. Progress = 450/1000.
+            // Example: If you have 1200 hours, this calculates 1000. Progress = 200/1000.
+            rewardData.startHours = Math.floor(currentTotalHours / 1000) * 1000;
+            
+            rewardData.isActive = true;
+            
+            // Only reset texts if they are undefined, otherwise keep them
+            if (typeof rewardData.reward1 === 'undefined') rewardData.reward1 = "";
+            if (typeof rewardData.reward2 === 'undefined') rewardData.reward2 = "";
+            
+            if (!rewardData.history) rewardData.history = [];
+            
+            saveRewardData();
+            updateRewardUI();
+        }
+        // 2. Save Reward Data
+        function saveRewardData() {
+            // Grab inputs if available
+            const r1 = document.getElementById('reward-input-1');
+            const r2 = document.getElementById('reward-input-2');
+            
+            if (r1 && r2) {
+                rewardData.reward1 = r1.value;
+                rewardData.reward2 = r2.value;
+            }
+
+            if (useFirebase && currentUserId && !isGuest) {
+                firebase.database().ref('users/' + currentUserId + '/rewards').set(rewardData);
+            } else {
+                localStorage.setItem('obs_todo_rewards', JSON.stringify(rewardData));
+            }
+        }
+
+        // 3. Update the UI (Bar, Inputs, Win State)
+       /* --- REWARD SYSTEM LOGIC --- */
+
+        // 1. Update the UI (Bar, Inputs, Win State, Texts)
+        function updateRewardUI() {
+            // Fill inputs
+            const r1 = document.getElementById('reward-input-1');
+            const r2 = document.getElementById('reward-input-2');
+            if (r1 && r1.value === "") r1.value = rewardData.reward1 || "";
+            if (r2 && r2.value === "") r2.value = rewardData.reward2 || "";
+
+            // 1. Get Absolute Total Hours
+            const lifetimeSeconds = calculateLifetimeTotal();
+            const currentTotalHours = lifetimeSeconds / 3600;
+
+            // 2. Determine "Level" (0-1000 = Level 1, 1000-2000 = Level 2)
+            const currentLoopIndex = Math.floor(currentTotalHours / 1000); 
+            const currentTierStart = currentLoopIndex * 1000;
+            const currentTierEnd = currentTierStart + 1000;
+
+            // 3. Calculate Progress for the Bar (0% to 100%)
+            let progressInCurrentTier = currentTotalHours - currentTierStart;
+            let percentage = (progressInCurrentTier / 1000) * 100;
+            if (percentage > 100) percentage = 100;
+
+            // 4. Update Bar & Text
+            const bar = document.getElementById('reward-progress-bar');
+            const textEl = document.getElementById('reward-progress-text');
+            const titleEl = document.getElementById('reward-quest-title');
+            
+            if (bar) bar.style.width = `${percentage}%`;
+            
+            // UPDATED TEXT: Shows "1,250 / 2,000 Hours" instead of "250 / 1000"
+            if (textEl) {
+                textEl.textContent = `${currentTotalHours.toFixed(1)} / ${currentTierEnd} Hours`;
+            }
+            
+            // Update Title to show Level
+            if (titleEl) {
+                titleEl.textContent = `Current Quest: Level ${currentLoopIndex + 1} (${currentTierStart}h - ${currentTierEnd}h)`;
+            }
+
+            // 5. Handle "Collection" Button Visibility
+            const collectionBtn = document.getElementById('toggle-collection-btn');
+            if (collectionBtn) {
+                if (rewardData.history && rewardData.history.length > 0) {
+                    collectionBtn.style.display = 'block';
+                } else {
+                    collectionBtn.style.display = 'none';
+                }
+            }
+
+            // 6. Win Condition Logic
+            const activeDiv = document.getElementById('reward-active-state');
+            const winDiv = document.getElementById('reward-win-state');
+
+            // How many rewards have we claimed in the past?
+            const rewardsClaimed = rewardData.history ? rewardData.history.length : 0;
+
+            // If our current Level Index is higher than the number of rewards we've claimed,
+            // it means we finished a 1000h block and haven't clicked the button yet.
+            if (currentLoopIndex > rewardsClaimed) {
+                // --- WIN STATE ---
+                if (activeDiv) activeDiv.style.display = 'none';
+                if (winDiv) {
+                    winDiv.style.display = 'block';
+                    document.getElementById('won-rewards-text').textContent = 
+                        `${rewardData.reward1 || 'Reward 1'} & ${rewardData.reward2 || 'Reward 2'}`;
+                }
+            } else {
+                // --- ACTIVE STATE ---
+                if (activeDiv) activeDiv.style.display = 'block';
+                if (winDiv) winDiv.style.display = 'none';
+            }
+        }
+
+        // 2. Reset / Claim Reward (Triggered by Button Click)
+        function resetRewardJourney(event) {
+            // A. Trigger Confetti immediately at button location
+            if (event) {
+                const rect = event.target.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                triggerRewardConfetti(centerX, centerY);
+            } else {
+                // Fallback to center screen
+                triggerRewardConfetti(window.innerWidth/2, window.innerHeight/2);
+            }
+
+            // B. Save to History
+            if (!rewardData.history) rewardData.history = [];
+            rewardData.history.push({
+                date: new Date().toISOString(),
+                reward1: rewardData.reward1,
+                reward2: rewardData.reward2
+            });
+            
+            // C. Clear inputs for the NEW journey
+            rewardData.reward1 = "";
+            rewardData.reward2 = "";
+            
+            saveRewardData();
+            
+            // D. Force UI Update
+            // This will see that (currentLoopIndex == rewardsClaimed) and switch back to Active State
+            // The "Start" number will naturally now be 1000, 2000, etc via the updateRewardUI math.
+            updateRewardUI();
+            
+            // E. Open the collection tab automatically to show the new badge
+            const collectionSection = document.getElementById('reward-collection-section');
+            if (collectionSection) {
+                collectionSection.style.display = 'block'; // Show it
+                renderCollection(); // Refresh list
+            }
+        }
+
+        // 3. Toggle Collection Visibility
+        function toggleCollection() {
+            const section = document.getElementById('reward-collection-section');
+            if (section.style.display === 'none') {
+                section.style.display = 'block';
+                renderCollection();
+            } else {
+                section.style.display = 'none';
+            }
+        }
+
+        // 4. Render Collection
+        function renderCollection() {
+            const grid = document.getElementById('collection-grid');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            
+            if (rewardData.history && rewardData.history.length > 0) {
+                // Reverse order so newest is first
+                [...rewardData.history].reverse().forEach((item, index) => {
+                    // Calculate which level this was (History length - index)
+                    const levelNum = rewardData.history.length - index;
+                    
+                    const div = document.createElement('div');
+                    div.className = 'collected-item';
+                    div.title = `Level ${levelNum} Complete\n${new Date(item.date).toLocaleDateString()}\nRewards: ${item.reward1}, ${item.reward2}`;
+                    
+                    // Image
+                    div.innerHTML = `<img src="img/gift.png">`;
+                    
+                    grid.appendChild(div);
+                });
+            }
+        }
+
+        // 7. Fun "Poke" Animation
+        function pokeCharacter() {
+            const charImg = document.getElementById('active-character-img');
+            if (charImg) {
+                charImg.style.transform = "scale(0.9) rotate(-10deg)";
+                setTimeout(() => {
+                    charImg.style.transform = "";
+                }, 150);
+            }
+        }
+
+        // 8. Massive Confetti for Reward
+        function triggerRewardConfetti(x, y) {
+            const colors = ['#fdcb6e', '#ffeaa7', '#fab1a0', '#ffffff', '#00b894'];
+            
+            for (let i = 0; i < 100; i++) {
+                const p = document.createElement('div');
+                p.className = 'confetti-particle';
+                p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                p.style.width = (Math.random() * 8 + 4) + 'px';
+                p.style.height = p.style.width;
+                
+                // Random explosion direction
+                const angle = Math.random() * Math.PI * 2;
+                const velocity = Math.random() * 200 + 50;
+                
+                const tx = Math.cos(angle) * velocity + 'px';
+                const ty = Math.sin(angle) * velocity + 'px';
+                
+                p.style.setProperty('--x', tx);
+                p.style.setProperty('--y', ty);
+                
+                p.style.left = x + 'px';
+                p.style.top = y + 'px';
+                p.style.position = 'fixed';
+                
+                p.style.animation = `explode-dist 1s ease-out forwards`;
+                
+                document.body.appendChild(p);
+                setTimeout(() => p.remove(), 1000);
+            }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         // Event listeners
         addBtn.addEventListener('click', function(e) {
