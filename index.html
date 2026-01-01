@@ -3323,38 +3323,59 @@
             });
         }
 
-
-
-        // Updated timer functions for more accurate display
         function startTimer(taskId) {
             if (timerIntervals[taskId]) return; // Timer already running
             
-            const task = tasks[taskId];
-            if (!task.timerStartTime) {
-                task.timerStartTime = Date.now();
+            // Check if task exists
+            if (!tasks[taskId]) return;
+
+            // Ensure valid start time locally
+            if (!tasks[taskId].timerStartTime) {
+                tasks[taskId].timerStartTime = Date.now();
             }
             
             // We use the ID as a flag that the timer is running
-            // We DO NOT set a display interval here anymore, the MasterLoop handles it
             timerIntervals[taskId] = {
                 // Only save to storage every 10 seconds to prevent lag/stutter
                 storageInterval: setInterval(() => {
-                    const elapsed = Math.floor((Date.now() - task.timerStartTime) / 1000);
-                    if (elapsed > 0) {
-                        // Silently update local object
-                        task.timeSpent = (task.timeSpent || 0) + elapsed;
-                        task.timerStartTime = Date.now();
+                    // --- FIX: Always fetch the LATEST task object from the global list ---
+                    // This ensures we aren't updating an old "stale" copy of the task
+                    const currentTask = tasks[taskId];
+
+                    // --- FIX: Safety Check ---
+                    // If the task was deleted OR if the database says it's paused (timerStartTime is null),
+                    // we must STOP this local timer immediately to prevent overwriting the pause.
+                    if (!currentTask || !currentTask.timerStartTime) {
+                        clearInterval(timerIntervals[taskId].storageInterval);
+                        delete timerIntervals[taskId];
                         
-                        // Save silently (without re-rendering)
+                        // Update UI button to show 'Paused' state
+                        const btn = document.getElementById(`quick-btn-${taskId}`);
+                        if(btn) {
+                            btn.classList.remove('running');
+                            btn.innerHTML = '▶';
+                            btn.title = 'Start Timer';
+                            btn.setAttribute('onclick', `event.stopPropagation(); startTimer('${taskId}')`);
+                        }
+                        return; 
+                    }
+
+                    // Calculate time using the FRESH task object
+                    const elapsed = Math.floor((Date.now() - currentTask.timerStartTime) / 1000);
+                    if (elapsed > 0) {
+                        // Update local object
+                        currentTask.timeSpent = (currentTask.timeSpent || 0) + elapsed;
+                        currentTask.timerStartTime = Date.now();
+                        
+                        // Save silently
                         if (useFirebase && !isGuest) {
-                            // specific update to avoid triggering full listeners if possible
-                            dbRef.child(taskId).child('timeSpent').set(task.timeSpent);
-                            dbRef.child(taskId).child('timerStartTime').set(task.timerStartTime);
+                            dbRef.child(taskId).child('timeSpent').set(currentTask.timeSpent);
+                            dbRef.child(taskId).child('timerStartTime').set(currentTask.timerStartTime);
                         } else {
                             localStorage.setItem('obs_todo_tasks', JSON.stringify(tasks));
                         }
                     }
-                }, 10000) // Save every 10 seconds instead of 1
+                }, 10000) // Save every 10 seconds
             };
             
             // Visual update immediately
@@ -3369,6 +3390,8 @@
             // Ensure master loop is running
             if (!masterAnimationFrame) startMasterLoop();
         }
+
+        
 
         function pauseTimer(taskId) {
             if (timerIntervals[taskId]) {
@@ -5224,6 +5247,32 @@
                 dbRef = firebase.database().ref('users/' + currentUserId + '/tasks');
                 dbRef.on('value', snap => {
                     const newTasks = snap.val() || {};
+
+                    // --- FIX START: SYNC STOPPED TIMERS ---
+                    // This block stops local timers if the database says they are paused.
+                    // This prevents "Window B" from overwriting the pause you did in "Window A".
+                    Object.keys(timerIntervals).forEach(taskId => {
+                        const remoteTask = newTasks[taskId];
+                        // If task was deleted remotely OR exists but has no timerStartTime (is paused)
+                        if (!remoteTask || !remoteTask.timerStartTime) {
+                            
+                            // 1. Stop the local 10-second save loop
+                            if (timerIntervals[taskId] && timerIntervals[taskId].storageInterval) {
+                                clearInterval(timerIntervals[taskId].storageInterval);
+                            }
+                            delete timerIntervals[taskId];
+
+                            // 2. Update the UI button immediately (visual feedback)
+                            const btn = document.getElementById(`quick-btn-${taskId}`);
+                            if(btn) {
+                                btn.classList.remove('running');
+                                btn.innerHTML = '▶';
+                                btn.title = 'Start Timer';
+                                btn.setAttribute('onclick', `event.stopPropagation(); startTimer('${taskId}')`);
+                            }
+                        }
+                    });
+                    // --- FIX END ---
                     
                     // If data updates but structure is same (e.g. timer tick), don't re-render
                     if (displayMode !== 'static' && !hasStructuralChanges(tasks, newTasks)) {
@@ -5231,6 +5280,8 @@
                         updateStreakData();
                         updateTimeStats();
                         updateStats();
+                        // We must still check restore here, in case a "Start" command came from another window
+                        restoreRunningTimers(); 
                         return; 
                     }
 
@@ -5290,7 +5341,6 @@
                 
                 loadStreakData(() => {
                     loadDisplayMode(() => {
-                        // --- CRITICAL FIX HERE ---
                         // If no mode is saved in LocalStorage (First time visitor), FORCE 'rotate-incompleted'
                         const storedMode = localStorage.getItem('obs_todo_displayMode');
                         
