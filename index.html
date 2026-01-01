@@ -2829,6 +2829,10 @@
         let pomoEndTime = null;
         let lastUiUpdate = 0;
 
+        let timerIntervals = {};
+        let pendingPauses = new Set(); // <--- ADD THIS LINE
+        let dragSrcEl = null;
+
 
 
         const alarmSound = document.getElementById('pomo-alarm');
@@ -3310,14 +3314,24 @@
 
 
 
-                // --- RESTORE TIMERS ON RELOAD ---
         function restoreRunningTimers() {
             Object.keys(tasks).forEach(taskId => {
                 const task = tasks[taskId];
-                // If task has a start time, is not complete, and isn't already running in memory
+
+                // If the DB says it's paused (null), we can stop ignoring it
+                if (!task.timerStartTime) {
+                    pendingPauses.delete(taskId);
+                }
+
+                // If we are waiting for a pause to sync, DO NOT restart this timer
+                if (pendingPauses.has(taskId)) {
+                    // Force local state to remain paused despite what the old DB snapshot says
+                    task.timerStartTime = null; 
+                    return;
+                }
+
+                // Normal restore logic
                 if (task.timerStartTime && !task.completed && !timerIntervals[taskId]) {
-                    // Re-initialize the internal timer logic
-                    // Note: startTimer checks if timerStartTime exists, so it won't overwrite the original start time
                     startTimer(taskId); 
                 }
             });
@@ -3329,6 +3343,12 @@
             // Check if task exists
             if (!tasks[taskId]) return;
 
+            // --- FIX: Remove from ignore list if user manually starts it ---
+            // This allows the user to manually override a pause state
+            if (typeof pendingPauses !== 'undefined') {
+                pendingPauses.delete(taskId);
+            }
+
             // Ensure valid start time locally
             if (!tasks[taskId].timerStartTime) {
                 tasks[taskId].timerStartTime = Date.now();
@@ -3339,12 +3359,11 @@
                 // Only save to storage every 10 seconds to prevent lag/stutter
                 storageInterval: setInterval(() => {
                     // --- FIX: Always fetch the LATEST task object from the global list ---
-                    // This ensures we aren't updating an old "stale" copy of the task
                     const currentTask = tasks[taskId];
 
                     // --- FIX: Safety Check ---
                     // If the task was deleted OR if the database says it's paused (timerStartTime is null),
-                    // we must STOP this local timer immediately to prevent overwriting the pause.
+                    // we must STOP this local timer immediately.
                     if (!currentTask || !currentTask.timerStartTime) {
                         clearInterval(timerIntervals[taskId].storageInterval);
                         delete timerIntervals[taskId];
@@ -3391,10 +3410,11 @@
             if (!masterAnimationFrame) startMasterLoop();
         }
 
-        
-
         function pauseTimer(taskId) {
             if (timerIntervals[taskId]) {
+                // Add to pending pauses so the database listener doesn't "resurrect" it
+                pendingPauses.add(taskId); // <--- ADD THIS LINE
+
                 // Clear the storage saver
                 clearInterval(timerIntervals[taskId].storageInterval);
                 delete timerIntervals[taskId];
