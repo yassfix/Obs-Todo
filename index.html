@@ -2776,6 +2776,7 @@
         let completedDaysRange = 1; 
         let dragSrcEl = null;
         let editingTaskId = null;
+        let tempEditingValue = null;
         let editingKeywordIndex = null;
         let expandedTasks = {}; 
         let taskInactivityTimers = {};
@@ -2842,12 +2843,22 @@
                 delete taskInactivityTimers[taskId];
             }
         }
-        function startTaskTimer(taskId) {
-            clearTaskTimer(taskId); // Ensure no duplicate timers
+      function startTaskTimer(taskId) {
+            // Keep this check at the top
+            if (editingTaskId === taskId) {
+                clearTaskTimer(taskId);
+                return;
+            }
+
+            clearTaskTimer(taskId); 
             taskInactivityTimers[taskId] = setTimeout(() => {
+                // NEW: If I am currently editing ANY task, ignore this background timer.
+                // This prevents the "Revert" bug without freezing your buttons.
+                if (editingTaskId !== null) return; 
+
                 if (expandedTasks[taskId]) {
                     expandedTasks[taskId] = false;
-                    renderTasks(); // Re-render to update UI
+                    renderTasks(); 
                 }
             }, 4000);
         }
@@ -3739,10 +3750,18 @@
 
         // Task editing functions
         function startEditingTask(taskId) {
+            // Clear timers to be safe
+            clearTaskTimer(taskId);
+            if (taskInactivityTimers[taskId]) {
+                clearTimeout(taskInactivityTimers[taskId]);
+                delete taskInactivityTimers[taskId];
+            }
+
             editingTaskId = taskId;
+            tempEditingValue = tasks[taskId].text; // <--- SAVE CURRENT TEXT HERE
+            
             renderTasks();
             
-            // Focus the input field after a short delay
             setTimeout(() => {
                 const input = document.querySelector(`.task-item[data-id="${taskId}"] .task-input`);
                 if (input) {
@@ -3752,25 +3771,29 @@
             }, 10);
         }
 
-        function saveTaskEdit(taskId) {
+       function saveTaskEdit(taskId) {
+            // Try to get value from input, otherwise fall back to our temp variable
             const input = document.querySelector(`.task-item[data-id="${taskId}"] .task-input`);
-            if (input) {
-                const newText = input.value.trim();
-                if (newText) {
-                    if (useFirebase && !isGuest) {
-                        dbRef.child(taskId).update({ text: newText });
-                    } else {
-                        tasks[taskId].text = newText;
-                        saveAllTasks();
-                    }
+            let newText = input ? input.value.trim() : (tempEditingValue || "").trim();
+
+            // Clear variables
+            editingTaskId = null;
+            tempEditingValue = null; // <--- RESET
+            
+            if (newText) {
+                if (useFirebase && !isGuest) {
+                    dbRef.child(taskId).update({ text: newText });
+                } else {
+                    tasks[taskId].text = newText;
+                    saveAllTasks();
                 }
             }
-            editingTaskId = null;
             renderTasks();
         }
 
         function cancelTaskEdit() {
             editingTaskId = null;
+            tempEditingValue = null;
             renderTasks();
         }
 
@@ -4392,15 +4415,19 @@
             // Main task content
             let taskContentHTML;
             if (editingTaskId === taskId) {
-                // Editing view
+               const displayValue = (tempEditingValue !== null) ? tempEditingValue : task.text;
+
                 taskContentHTML = `
                     <div class="task-main-content">
                         ${orderControlsHTML}
                         <input type="checkbox" class="task-checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${taskId}')">
                         
-                        <input type="text" class="task-input" value="${escapeHtml(task.text)}" 
+                        <input type="text" class="task-input" 
+                            value="${escapeHtml(displayValue)}" 
+                            oninput="tempEditingValue = this.value; clearTaskTimer('${taskId}')"
+                            onfocus="clearTaskTimer('${taskId}')"
                             onkeydown="if(event.key === 'Enter') saveTaskEdit('${taskId}'); if(event.key === 'Escape') cancelTaskEdit();">
-                        
+                                                
                         <div class="task-actions">
                             <button class="action-btn" onclick="saveTaskEdit('${taskId}')">✔️</button>
                             <button class="action-btn" onclick="cancelTaskEdit()">❌</button>
@@ -6864,6 +6891,20 @@
             // Update the Progress bar (since it relies on completed vs remaining)
             updateStats();
         }
+
+
+        // Add this helper to save when clicking anywhere else on the screen
+        document.addEventListener('mousedown', function(event) {
+            if (editingTaskId !== null) {
+                const taskEl = document.querySelector(`.task-item[data-id="${editingTaskId}"]`);
+                
+                // If the click is OUTSIDE the task currently being edited
+                if (taskEl && !taskEl.contains(event.target)) {
+                    // Save the work automatically
+                    saveTaskEdit(editingTaskId);
+                }
+            }
+        });
 
         // Initial load
         initializeAuth(); // Initialize authentication instead of directly loading tasks
